@@ -73,3 +73,29 @@ if sol.retcode==:Success
 else
         return false;
 end
+
+
+#=
+# PLOT OPtiON
+using Plots
+pyplot()
+
+PLOT = false
+if PLOT
+        ilvl = 1  # choose lvl to plot here
+
+        clims = (-1.1*maximum(abs.(ψ[ilvl,:,:,:])),1.1*maximum(abs.(ψ[ilvl,:,:,:]))) # get colormap maxima
+
+        plot_times = 0:(t_end)/200:t_end  # choose timesteps to plot
+
+        sf = zeros(eltype(ψ),3,size(ψ,2),size(ψ,3),length(plot_times))
+        iit=0
+        anim = @animate for it ∈ plot_times
+            iit += 1
+            sf[:,:,:,iit] = transform_grid(qprimetoψ(qg3p, sol(it)),qg3p)
+            heatmap(sf[ilvl,:,:,iit], c=:balance, title=string("time=",it,"   - ",it*time_unit," d"), clims=clims)
+        end
+        gif(anim, "anim_fps20.gif", fps = 20)
+ end
+
+=#
