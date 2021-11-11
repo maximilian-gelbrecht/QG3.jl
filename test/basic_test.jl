@@ -2,6 +2,7 @@
 
 using QG3, NetCDF, CFTime, Dates, BenchmarkTools, DifferentialEquations
 
+# first we import the data (streamfunction), land sea mask, orography etc
 begin
         DIR = "../data/"
         NAME = "ERA5-sf-t21q.nc"
@@ -37,28 +38,33 @@ begin
         ψ = permutedims(ψ, [3,2,1,4]) # level, lat, lon,
         ψ = Float64.(ψ[:,lat_inds,:,:])
 
-
         gridtype="gaussian"
 end
 
 L = 22 # T21 grid
+
+# pre-compute the model and normalize the data
 qg3ppars = QG3ModelParameters(L, lats, lons, LS, h)
 
 ψ = ψ ./ qg3ppars.ψ_unit
 
 qg3p = QG3Model(qg3ppars)
 
+# stream function data in spherical domain
 ψ_SH = transform_SH(ψ[:,:,:,1:10000], qg3p)
 
+# initial conditions for streamfunction and vorticity
 ψ_0 = ψ_SH[:,:,:,1]
 q_0 = QG3.ψtoqprime(qg3p, ψ_0)
 
+# compute the forcing
 S = @time QG3.compute_S_Roads(ψ_SH[:,:,:,1:10000], qg3p)
 
+# time step
 DT = 2π/144
-
 t_end = 200.
 
+# problem definition and solve
 prob = ODEProblem(QG3.QG3MM_base, q_0, (0.,t_end), [qg3p, S])
 sol = @time solve(prob, AB5(), dt=DT)
 
