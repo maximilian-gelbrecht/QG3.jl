@@ -2,5 +2,5 @@ using QG3
 using Test
 
 @testset "QG3.jl" begin
-    # Write your tests here.
+    @test include("basic_test.jl")
 end
