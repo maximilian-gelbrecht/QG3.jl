@@ -7,3 +7,5 @@ The model is solved with a pseudo-spectral approach. Currently there is a naive 
 There is a rudimentary documentation already available that is mostly all the doc strings from the individual functions. Unfortunately the PIK Gitlab offers no Gitlab Pages, so it is not hosted but hidden inside the `docs` folder.
 
 The `test/basic_test.jl` file also provides a basic example of how to run the model.
+
+Install e.g. via `]add https://gitlab.pik-potsdam.de/maxgelbr/qg3.jl.git`

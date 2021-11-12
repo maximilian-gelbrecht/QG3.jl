@@ -118,13 +118,13 @@ struct RegularGrid{T, onGPU} <: AbstractGridType{T, onGPU}
 end
 
 struct GaussianGrid{T, onGPU} <: AbstractGridType{T, onGPU}
-    P::AbstractArray{T,3}
-    Pw::AbstractArray{T,3}
-    FT
-    iFT
-    truncate_array
-    dPμdμ::AbstractArray{T,3}
-    dPcosθdθ::AbstractArray{T,3}
+    P::AbstractArray{T,3} # ass. Legendre Polynomials
+    Pw::AbstractArray{T,3} # ass. Legendre Polynomials * Gaussian weights
+    FT # Fourier transform plan
+    iFT # inverse Fourier transform plan
+    truncate_array # truncatation indices
+    dPμdμ::AbstractArray{T,3} # derivative of ass. Legendre Polynomials
+    dPcosθdθ::AbstractArray{T,3} # derivative of ass. Legendre Polynomials
 end
 
 function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
@@ -175,7 +175,7 @@ function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
             end
         end
 
-        return GaussianGrid{T, cuda_used}(gpu(P), gpu(Pw), FT, iFT, gpu(truncate_array), gpu(dPμdμ), gpu(dPcosθdθ))
+        return GaussianGrid{T, cuda_used}(togpu(P), togpu(Pw), FT, iFT, togpu(truncate_array), togpu(dPμdμ), togpu(dPcosθdθ))
     else
         error("Unknown gridtype.")
     end
