@@ -41,7 +41,7 @@ begin
         gridtype="gaussian"
 end
 
-L = 22 # T21 grid
+L = 22 # T21 grid, truncate with l_max = 21
 
 # pre-compute the model and normalize the data
 qg3ppars = QG3ModelParameters(L, lats, lons, LS, h)
@@ -51,14 +51,14 @@ qg3ppars = QG3ModelParameters(L, lats, lons, LS, h)
 qg3p = QG3Model(qg3ppars)
 
 # stream function data in spherical domain
-ψ_SH = transform_SH(ψ[:,:,:,1:10000], qg3p)
+ψ_SH = transform_SH(ψ, qg3p)
 
 # initial conditions for streamfunction and vorticity
 ψ_0 = ψ_SH[:,:,:,1]
 q_0 = QG3.ψtoqprime(qg3p, ψ_0)
 
-# compute the forcing
-S = @time QG3.compute_S_Roads(ψ_SH[:,:,:,1:10000], qg3p)
+# compute the forcing from winter data
+S = @time QG3.compute_S_Roads(ψ_SH[:,:,:,winter_ind], qg3p)
 
 # time step
 DT = 2π/144
@@ -80,7 +80,7 @@ end
 using Plots
 pyplot()
 
-PLOT = false
+PLOT = true
 if PLOT
         ilvl = 1  # choose lvl to plot here
 
@@ -88,14 +88,12 @@ if PLOT
 
         plot_times = 0:(t_end)/200:t_end  # choose timesteps to plot
 
-        sf = zeros(eltype(ψ),3,size(ψ,2),size(ψ,3),length(plot_times))
-        iit=0
-        anim = @animate for it ∈ plot_times
-            iit += 1
-            sf[:,:,:,iit] = transform_grid(qprimetoψ(qg3p, sol(it)),qg3p)
-            heatmap(sf[ilvl,:,:,iit], c=:balance, title=string("time=",it,"   - ",it*time_unit," d"), clims=clims)
+        anim = @animate for (iit,it) ∈ enumerate(plot_times)
+            sf_plot = transform_grid(qprimetoψ(qg3p, sol(it)),qg3p)
+            heatmap(sf_plot[ilvl,:,:], c=:balance, title=string("time=",it,"   - ",it*qg3p.p.time_unit," d"), clims=clims)
         end
         gif(anim, "anim_fps20.gif", fps = 20)
  end
+
 
 =#
