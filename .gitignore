@@ -1,2 +1,6 @@
 /Manifest.toml
 /.DS_Store
+/data/ERA5-sf-t21q.nc
+/data/land-t21.nc
+/data/oro-t21.nc
+/docs/.DS_Store
