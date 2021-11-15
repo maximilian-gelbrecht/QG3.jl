@@ -95,6 +95,10 @@ function QG3ModelParameters(L::Int, lats::AbstractArray{T,1}, lons::AbstractArra
     return QG3ModelParameters(L, M, N_lats, N_lons, togpu(lats), togpu(colats), togpu(μ), togpu(lons), togpu(LS), togpu(h), R1i, R2i, H0, τRi, τEi, cH, α1, α2, a, Ω, gridtype, time_unit, distance_unit, ψ_unit, q_unit)
 end
 
+togpu(x::QG3ModelParameters) = QG3ModelParameters(L, M, N_lats, N_lons, togpu(lats), togpu(colats), togpu(μ), togpu(lons), togpu(LS), togpu(h), R1i, R2i, H0, τRi, τEi, cH, α1, α2, a, Ω, gridtype, time_unit, distance_unit, ψ_unit, q_unit)
+
+tocpu(x::QG3ModelParameters) = QG3ModelParameters(L, M, N_lats, N_lons, tocpu(lats), tocpu(colats), tocpu(μ), tocpu(lons), tocpu(LS), tocpu(h), R1i, R2i, H0, τRi, τEi, cH, α1, α2, a, Ω, gridtype, time_unit, distance_unit, ψ_unit, q_unit)
+
 """
     AbstractGridType{T, onGPU}
 
