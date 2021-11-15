@@ -1,6 +1,6 @@
 module QG3
 
-using GSL, CUDA, FFTW, FastGaussQuadrature, Tullio, Flux, StatsBase, LinearAlgebra, FastTransforms
+using GSL, CUDA, FFTW, FastGaussQuadrature, Tullio, Flux, StatsBase, LinearAlgebra, FastTransforms, JLD2
 
 import GSL.sf_legendre_deriv_array_e
 import GSL.sf_legendre_deriv_alt_array_e

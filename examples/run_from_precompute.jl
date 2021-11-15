@@ -3,10 +3,15 @@
 using QG3, BenchmarkTools, DifferentialEquations, JLD2
 
 # load forcing and model parameters
-@load "data/t21-precomputed-S.jld2" S
-@load "data/t21-precomputed-p.jld2" qg3ppars
-@load "data/t21-precomputed-sf.jld2" ψ_0
-@load "data/t21-precomputed-q.jld2" q_0
+
+# either from files directly
+#@load "data/t21-precomputed-S.jld2" S
+#@load "data/t21-precomputed-p.jld2" qg3ppars
+#@load "data/t21-precomputed-sf.jld2" ψ_0
+#@load "data/t21-precomputed-q.jld2" q_0
+
+# or use the function that automatically loads the files that are saved in the repository
+S, qg3ppars, ψ_0, q_0 = QG3.load_precomputed_data()
 
 qg3p = QG3Model(qg3ppars)
 
@@ -26,7 +31,7 @@ PLOT = true
 if PLOT
         ilvl = 1  # choose lvl to plot here
 
-        clims = (-1.1*maximum(abs.(ψ_0[ilvl,:,:])),1.1*maximum(abs.(ψ[ilvl,:,:,:]))) # get colormap maxima
+        clims = (-1.1*maximum(abs.(ψ_0[ilvl,:,:])),1.1*maximum(abs.(ψ_0[ilvl,:,:,:]))) # get colormap maxima
 
         plot_times = 0:(t_end)/200:t_end  # choose timesteps to plot
 

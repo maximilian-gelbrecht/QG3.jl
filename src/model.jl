@@ -100,6 +100,7 @@ H(qprime::AbstractArray{T,3}, i::Int, m::QG3Model{T}) where T<: Number = m.p.cH 
 u(ψ, m) = -m.p.a^(-1) .* SHtoGrid_dϕ(ψ, m)
 v(ψ, m) = m.acosϕi .* SHtoGrid_dλ(ψ, m)
 
+# derivate functions follow the naming scheme: "Domain1Input"to"Domain2Output"_d"derivativeby"
 
 """
 derivative of input after φ (polar angle) or λ (longtitude) in SH to Grid, only for a single layer

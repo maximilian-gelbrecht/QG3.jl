@@ -48,3 +48,20 @@ function plot_ticks(p::QG3ModelParameters, name, N_interval,digits=2)
     end
     (tickrange, tickvals)
 end
+
+"""
+    load_precomputed_data()
+
+Loads the precomputed data that is saved in the package. It is computed from ERA5 T21 u/v data. Returns in order
+
+* `S`, `qg3ppars`, `ψ_0`, `q_0`
+* Forcing, Parameters, Streamfunction initial conditions, vorticity initial conditions
+"""
+function load_precomputed_data()
+    @load "data/t21-precomputed-S.jld2" S
+    @load "data/t21-precomputed-p.jld2" qg3ppars
+    @load "data/t21-precomputed-sf.jld2" ψ_0
+    @load "data/t21-precomputed-q.jld2" q_0
+
+    return S, qg3ppars, ψ_0, q_0
+end
