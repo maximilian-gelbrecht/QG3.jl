@@ -95,9 +95,9 @@ function QG3ModelParameters(L::Int, lats::AbstractArray{T,1}, lons::AbstractArra
     return QG3ModelParameters(L, M, N_lats, N_lons, togpu(lats), togpu(colats), togpu(μ), togpu(lons), togpu(LS), togpu(h), R1i, R2i, H0, τRi, τEi, cH, α1, α2, a, Ω, gridtype, time_unit, distance_unit, ψ_unit, q_unit)
 end
 
-togpu(x::QG3ModelParameters) = QG3ModelParameters(L, M, N_lats, N_lons, togpu(lats), togpu(colats), togpu(μ), togpu(lons), togpu(LS), togpu(h), R1i, R2i, H0, τRi, τEi, cH, α1, α2, a, Ω, gridtype, time_unit, distance_unit, ψ_unit, q_unit)
+togpu(p::QG3ModelParameters) = QG3ModelParameters(p.L, p.M, p.N_lats, p.N_lons, togpu(p.lats), togpu(p.colats), togpu(p.μ), togpu(p.lons), togpu(p.LS), togpu(p.h), p.R1i, p.R2i, p.H0, p.τRi, p.τEi, p.cH, p.α1, p.α2, p.a, p.Ω, p.gridtype, p.time_unit, p.distance_unit, p.ψ_unit, p.q_unit)
 
-tocpu(x::QG3ModelParameters) = QG3ModelParameters(L, M, N_lats, N_lons, tocpu(lats), tocpu(colats), tocpu(μ), tocpu(lons), tocpu(LS), tocpu(h), R1i, R2i, H0, τRi, τEi, cH, α1, α2, a, Ω, gridtype, time_unit, distance_unit, ψ_unit, q_unit)
+tocpu(p::QG3ModelParameters) = QG3ModelParameters(p.L, p.M, p.N_lats, p.N_lons, tocpu(p.lats), tocpu(p.colats), tocpu(p.μ), tocpu(p.lons), tocpu(p.LS), tocpu(p.h), p.R1i, p.R2i, p.H0, p.τRi, p.τEi, p.cH, p.α1, p.α2, p.a, p.Ω, p.gridtype, p.time_unit, p.distance_unit, p.ψ_unit, p.q_unit)
 
 """
     AbstractGridType{T, onGPU}
