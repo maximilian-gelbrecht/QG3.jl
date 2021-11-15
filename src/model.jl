@@ -3,7 +3,6 @@
 
 # right now the equations is solved in real spherical harmonics expansion
 
-
 # The transform is handled either by naive SH transform or the FastTransforms.jl library and is pre-computed. The FastTransforms.jl is currently invoking aliasing problems and not working for the full model. All SH are handled in the matrix convention that FastTransforms.jl uses: columns by m-value: 0, -1, 1, -2, 2, ..., rows l in ascending order. This is for the naive SH transform definately not the fasted way of storing the coefficients as an additonal allocating reordering needs to be done for every transform. Therefore the coefficient matrix convention might be changed in future versions of this model.
 
 # the whole code is written to be differentiable by Zygote. This is why all function are written in a non-mutating way, this is slightly slower on CPU, on GPU some of these functions like batched matrix multicplication should be faster. Even when a GPU is detected, a lot of the pre-computation is done on CPU, the integration however is performed on GPU
