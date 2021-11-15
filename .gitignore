@@ -4,3 +4,6 @@
 /data/land-t21.nc
 /data/oro-t21.nc
 /docs/.DS_Store
+/.github
+/docs/build/.DS_Store
+/anim_fps20.gif
