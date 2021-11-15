@@ -58,10 +58,13 @@ Loads the precomputed data that is saved in the package. It is computed from ERA
 * Forcing, Parameters, Streamfunction initial conditions, vorticity initial conditions
 """
 function load_precomputed_data()
-    @load "data/t21-precomputed-S.jld2" S
-    @load "data/t21-precomputed-p.jld2" qg3ppars
-    @load "data/t21-precomputed-sf.jld2" ψ_0
-    @load "data/t21-precomputed-q.jld2" q_0
+
+    path = joinpath(dirname(@__FILE__), "..", "data/")
+
+    @load string(path,"t21-precomputed-S.jld2") S
+    @load string(path,"t21-precomputed-p.jld2") qg3ppars
+    @load string(path,"t21-precomputed-sf.jld2") ψ_0
+    @load string(path,"t21-precomputed-q.jld2") q_0
 
     return S, qg3ppars, ψ_0, q_0
 end
