@@ -8,8 +8,8 @@ import GSL.sf_legendre_array_index
 
 global const cuda_used = Ref(false)
 
-function __init__() # automatically called at runtime to set cuda_used 
-    use_gpu[] = CUDA.functional()
+function __init__() # automatically called at runtime to set cuda_used
+    cuda_used[] = CUDA.functional()
 end
 
 using CUDA.CUFFT, CUDAKernels, KernelAbstractions
