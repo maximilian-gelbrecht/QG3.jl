@@ -152,7 +152,7 @@ function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
         Pw = deepcopy(P)
         Pw = compute_LegendreGauss(p, Pw)
 
-        if cuda_used
+        if cuda_used[]
             FT = CUDA.CUFFT.plan_rfft(A_real, 2)
             iFT = CUDA.CUFFT.plan_irfft((FT*A_real), p.N_lons, 2)
 
@@ -176,7 +176,7 @@ function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
             end
         end
 
-        return GaussianGrid{T, cuda_used}(togpu(P), togpu(Pw), FT, iFT, togpu(truncate_array), togpu(dPμdμ), togpu(dPcosθdθ))
+        return GaussianGrid{T, cuda_used[]}(togpu(P), togpu(Pw), FT, iFT, togpu(truncate_array), togpu(dPμdμ), togpu(dPcosθdθ))
     else
         error("Unknown gridtype.")
     end

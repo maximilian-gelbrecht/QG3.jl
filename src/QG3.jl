@@ -15,7 +15,7 @@ end
 using CUDA.CUFFT, CUDAKernels, KernelAbstractions
 
 togpu(x::AbstractArray) = cuda_used[] ? CuArray(x) : x
-tocpu(x) = cuda_used ? Array(x) : x
+tocpu(x) = cuda_used[] ? Array(x) : x
 
 include("basic_types.jl")
 include("sph_tools.jl")
