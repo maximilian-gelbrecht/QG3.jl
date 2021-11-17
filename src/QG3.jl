@@ -27,6 +27,6 @@ include("forcing.jl")
 
 export QG3ModelParameters, QG3Model, transform_SH, transform_grid, level_index
 
-export qprimetoψ, ψtoqprime, qtoψ, ψtoq, J, J3, D1, D2, D3
+export qprimetoψ, ψtoqprime, qtoψ, ψtoq, J, J3, D1, D2, D3, togpu, tocpu
 
 end
