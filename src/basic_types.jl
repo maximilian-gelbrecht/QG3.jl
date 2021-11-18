@@ -243,3 +243,5 @@ function QG3Model(p::QG3ModelParameters)
 
     return QG3Model(p, g, togpu(k), togpu(TRcoeffs), togpu(cosϕ), togpu(acosϕi), togpu(Δ), togpu(mm), togpu(swap_m_sign_array), togpu(Tψq), togpu(Tqψ), togpu(f), togpu(∇8), togpu(∂k∂ϕ), togpu(∂k∂μ), togpu(∂k∂λ))
 end
+
+togpu(m::QG3Model) = QG3Model(togpu(m.p), grid(togpu(m.p)), togpu(m.k), togpu(m.TRcoeffs), togpu(m.cosϕ), togpu(m.acosϕi), togpu(m.Δ), togpu(m.mm), togpu(m.swap_m_sign_array), togpu(m.Tψq), togpu(m.Tqψ), togpu(m.f), togpu(m.∇8), togpu(m.∂k∂ϕ), togpu(m.∂k∂μ), togpu(m.∂k∂λ))

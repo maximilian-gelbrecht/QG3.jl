@@ -17,7 +17,7 @@ Pre-compute ass. Legendre Polynomials and dP/dx (derivative of ass. Legendre Pol
 
 m values are stored 0,-1,1,-2,2,-3,3,...
 
-# double check -m values , so far only |m| is used, as I assume real SPH.
+# so far only |m| is used, as I assume real SPH.
 
 
 """
