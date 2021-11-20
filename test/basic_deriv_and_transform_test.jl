@@ -1,5 +1,4 @@
 # this is a very basic to test if the transform and derivite work sort of correct, it just checks if it can correctly transform and take derivatives of cosθ
-using Test
 @testset "Transforms and Derivatives" begin
 
 using QG3, BenchmarkTools, DifferentialEquations, JLD2
@@ -17,8 +16,8 @@ for i ∈ 1:qg3p.p.N_lats
 end
 # 2D transforms
 cSH_2d = transform_SH(cosθ, qg3p)
-@test sum(abs.(cSH_2d) .> 1e-3) == 1
-@test abs.(cSH_2d[2,1]) > 0.1
+@test sum(abs.(cSH_2d) .> 1) == 1
+@test abs.(cSH_2d[2,1]) > 20.
 
 cg = transform_grid(cSH_2d, qg3p)
 @test mean(abs.(cg - cosθ) ./ abs.(cg)) < 1e-3
@@ -41,10 +40,10 @@ msinθ = QG3.make3d(msinθ)
 cSH = transform_SH(cosθ, qg3p)
 
 @test mean(abs.(cSH[1,:,:] - cSH_2d)) < 1e-5
-@test sum(abs.(cSH) .> 1e-3) == 3
-@test abs.(cSH[1,2,1]) > 0.1
-@test abs.(cSH[2,2,1]) > 0.1
-@test abs.(cSH[3,2,1]) > 0.1
+@test sum(abs.(cSH) .> 1.) == 3
+@test abs.(cSH[1,2,1]) > 20.
+@test abs.(cSH[2,2,1]) > 20.
+@test abs.(cSH[3,2,1]) > 20.
 
 cg = transform_grid(cSH, qg3p)
 @test mean(abs.(cg - cosθ) ./ abs.(cg)) < 1e-3

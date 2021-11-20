@@ -225,7 +225,7 @@ function transformSHtoGGrid(A::AbstractArray{T,2}, p::QG3ModelParameters{T}, g::
     out = batched_vec(g.P, A)
 
     # pad with zeros and adjust to indexing of FFTW
-    g.iFT * cat(out[:,1:2:end], zeros(T, p.N_lats, p.N_lons - p.M), out[:,end-1:-2:2], dims=2)
+    g.iFT * cat(out[:,1:2:end], zeros(T, p.N_lats, p.N_lons - p.M), out[:,end-1:-2:2], dims=2) ./ p.N_lons # has to be normalized as this is not done by FFTW
 end
 
 """
@@ -238,7 +238,8 @@ function transformSHtoGGrid(A::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::
     @tullio out[lvl, ilat, im] := g.P[ilat, il, im] * A[lvl, il, im]
 
     # pad with zeros and adjust to indexing of FFTW
-    g.iFT_3d * cat(out[:,:,1:2:end], zeros(T, 3, p.N_lats, p.N_lons - p.M), out[:,:,end-1:-2:2], dims=3)
+    g.iFT_3d * cat(out[:,:,1:2:end], zeros(T, 3, p.N_lats, p.N_lons - p.M), out[:,:,end-1:-2:2], dims=3) ./ p.N_lons # has to be normalized as this is not done by FFTW
+
 end
 
 # GPU/CUDA variant
@@ -253,7 +254,7 @@ end
 
 # GPU/CUDA variant for 3d field
 function transformSHtoGGrid(A::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::GaussianGrid{T, true}) where T<:Number
-    @tullio out[ilvl, ilat, im] := g.P[ilat, il, im] * A[ilvl, il, im]
+    @tullio out[lvl, ilat, im] := g.P[ilat, il, im] * A[lvl, il, im]
 
     Re = @view out[:,:,1:(Int(p.N_lons/2)+1)]
     Im = @view out[:,:,(Int(p.N_lons/2)+2):end]
@@ -268,8 +269,7 @@ CPU variant
 """
 function transformGGridtoSH(A::AbstractArray{T,2}, p::QG3ModelParameters{T}, g::GaussianGrid{T, false}) where T<:Number
 
-    FTA = (g.FT * A)[:,g.truncate_array] ./ p.N_lons # has to be normalized as this is not done by FFTW
-
+    FTA = (g.FT * A)[:,g.truncate_array]
     @tullio out[il,im] := g.Pw[i,il,im] * FTA[i,im]
 end
 
@@ -280,7 +280,7 @@ CPU variant, 3D vectorized variant
 """
 function transformGGridtoSH(A::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::GaussianGrid{T, false}) where T<:Number
 
-    FTA = (g.FT_3d * A)[:,:,g.truncate_array] ./ p.N_lons # has to be normalized as this is not done by FFTW
+    FTA = (g.FT_3d * A)[:,:,g.truncate_array]
 
     @tullio out[ilvl,il,im] := g.Pw[ilat,il,im] * FTA[ilvl,ilat,im]
 end

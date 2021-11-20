@@ -83,7 +83,7 @@ function _SHtoGrid_dμθ(ψ::AbstractArray{T,2}, dP::AbstractArray{T,3}, p::QG3M
 
     out = batched_vec(dP, ψ)
 
-    g.iFT * cat(out[:,1:2:end], zeros(T, p.N_lats, p.N_lons - p.M), out[:,end-1:-2:2], dims=2)
+    g.iFT * cat(out[:,1:2:end], zeros(T, p.N_lats, p.N_lons - p.M), out[:,end-1:-2:2], dims=2) ./ p.N_lons # has to be normalized as this is not done by FFTW
 end
 
 function _SHtoGrid_dμθ(ψ::AbstractArray{T,2}, dP::AbstractArray{T,3}, p::QG3ModelParameters, g::AbstractGridType{T, true}) where T<:Number
@@ -101,7 +101,7 @@ function _SHtoGrid_dμθ(ψ::AbstractArray{T,3}, dP::AbstractArray{T,3}, p::QG3M
 
     @tullio out[lvl, ilat, im] := dP[ilat, il, im] * ψ[lvl, il, im]
 
-    g.iFT_3d * cat(out[:,:,1:2:end], zeros(T, 3, p.N_lats, p.N_lons - p.M), out[:,:,end-1:-2:2], dims=3)
+    g.iFT_3d * cat(out[:,:,1:2:end], zeros(T, 3, p.N_lats, p.N_lons - p.M), out[:,:,end-1:-2:2], dims=3) ./ p.N_lons # has to be normalized as this is not done by FFTW
 end
 
 # 3d field GPU
