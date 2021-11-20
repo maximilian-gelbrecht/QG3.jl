@@ -306,7 +306,7 @@ function QG3Model(p::QG3ModelParameters)
     k_SH = transform_SH(k, p, g)
 
     ∂k∂μ = SHtoGrid_dμ(k_SH, p, g)
-    ∂k∂λ = transform_grid(SHtoSH_dφ(k_SH, p, g)) ./ (cosϕ .^ 2)
+    ∂k∂λ = transform_grid(SHtoSH_dφ(k_SH, g)) ./ (cosϕ .^ 2)
     ∂k∂ϕ = SHtoGrid_dϕ(k_SH, p, g)
 
     return QG3Model(p, g, k, TRcoeffs, TR_matrix, cosϕ, acosϕi, Δ, Tψq, Tqψ, f, f_J3, ∇8, make3d(∇8), ∂k∂ϕ, ∂k∂μ, ∂k∂λ)
