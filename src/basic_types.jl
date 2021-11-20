@@ -120,19 +120,40 @@ struct RegularGrid{T, onGPU} <: AbstractGridType{T, onGPU}
     swap_m_sign_array # indexing array, used to swap the sign of the m SH number, used for zonal derivative
 end
 
+"""
+     GaussianGrid{T, onGPU} <: AbstractGridType{T, onGPU}
+
+Struct for Gaussian grid and its transforms.
+
+# Fields:
+
+* `P::AbstractArray{T,3}` ass. Legendre Polynomials
+* `Pw::AbstractArray{T,3}` ass. Legendre Polynomials * Gaussian weights
+* `FT` Fourier transform plan
+* `iFT` inverse Fourier transform plan
+* `FT_3d` Fourier transform plan for fully matrix version with lvl as first dimension
+* `iFT_3d` inverse Fourier transform plan for fully matrix version with lvl as first dimension
+* `truncate_array` truncatation indices
+* `dPμdμ::AbstractArray{T,3}` derivative of ass. Legendre Polynomials
+* `dPcosθdθ::AbstractArray{T,3}` derivative of ass. Legendre Polynomials
+* `mm::AbstractArray{T,2}` (-m) SH number matrix, used for zonal derivative
+* `mm_3d::AbstractArray{T,3}` (-m) SH number matrix, used for zonal derivative for 3d fields
+* `swap_m_sign_array` indexing array, used to swap the sign of the m SH number, used for zonal derivative
+
+"""
 struct GaussianGrid{T, onGPU} <: AbstractGridType{T, onGPU}
-    P::AbstractArray{T,3} # ass. Legendre Polynomials
-    Pw::AbstractArray{T,3} # ass. Legendre Polynomials * Gaussian weights
-    FT # Fourier transform plan
-    iFT # inverse Fourier transform plan
-    FT_3d # Fourier transform plan for fully matrix version with lvl as first dimension
-    iFT_3d # inverse Fourier transform plan for fully matrix version with lvl as first dimension
-    truncate_array # truncatation indices
-    dPμdμ::AbstractArray{T,3} # derivative of ass. Legendre Polynomials
-    dPcosθdθ::AbstractArray{T,3} # derivative of ass. Legendre Polynomials
-    mm::AbstractArray{T,2} # (-m) SH number matrix, used for zonal derivative
-    mm_3d::AbstractArray{T,3} # (-m) SH number matrix, used for zonal derivative for 3d fields
-    swap_m_sign_array # indexing array, used to swap the sign of the m SH number, used for zonal derivative
+    P::AbstractArray{T,3}
+    Pw::AbstractArray{T,3}
+    FT
+    iFT
+    FT_3d
+    iFT_3d
+    truncate_array
+    dPμdμ::AbstractArray{T,3}
+    dPcosθdθ::AbstractArray{T,3}
+    mm::AbstractArray{T,2}
+    mm_3d::AbstractArray{T,3}
+    swap_m_sign_array
 end
 
 """
@@ -177,7 +198,7 @@ function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
             iFT = CUDA.CUFFT.plan_irfft((FT*A_real[1,:,:]), p.N_lons, 2)
 
             FT_3d = CUDA.CUFFT.plan_rfft(A_real, 3)
-            iFT_3d = CUDA.CUFFT.plan_irfft((FT*A_real), p.N_lons, 3)
+            iFT_3d = CUDA.CUFFT.plan_irfft((FT_3d*A_real), p.N_lons, 3)
 
             truncate_array = nothing
         else

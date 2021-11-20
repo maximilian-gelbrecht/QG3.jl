@@ -88,9 +88,12 @@ end
 
 function _SHtoGrid_dμθ(ψ::AbstractArray{T,2}, dP::AbstractArray{T,3}, p::QG3ModelParameters, g::AbstractGridType{T, true}) where T<:Number
 
-    out = batched_vec(dP, ψ)
+    @tullio out[ilat, im] := dP[ilat, il, im] * ψ[il, im]
 
-    g.iFT * complex.(cat(out[:,1:2:end], CUDA.zeros(T, p.N_lats, div(p.N_lons,2) + 1 - p.L), dims=2), cat(CUDA.zeros(T,p.N_lats,1), out[:,2:2:end], CUDA.zeros(T, p.N_lats, div(p.N_lons,2) + 1 - p.L), dims=2))
+    Re = @view out[:,1:p.L]
+    Im = @view out[:,p.L+1:end]
+
+    g.iFT * complex.(Re, Im)
 end
 
 # 3d field CPU
