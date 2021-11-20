@@ -296,7 +296,7 @@ function transformGGridtoSH(A::AbstractArray{T,2}, p::QG3ModelParameters{T}, g::
     FTA = g.FT * A
 
     # deal with the complex array, turn it into half complex format
-    HCr = cat(real.(FTA), imag.(FTA), dims=3)
+    HCr = cat(real.(FTA), imag.(FTA), dims=2)
 
     # truncation is performed in this step as Pw has 0s where the expansion is truncated
     @tullio out[il,im] := g.Pw[i,il,im] * HCr[i,im]

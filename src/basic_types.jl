@@ -296,7 +296,7 @@ function QG3Model(p::QG3ModelParameters)
     Tqψ, Tψq = togpu(Tqψ), togpu(Tψq)
 
     TRcoeffs = togpu(compute_TR(p))
-    f = transform_SH(compute_coriolis_vector_grid(p), p, g)
+    f = transform_SH(togpu(compute_coriolis_vector_grid(p)), p, g)
 
     TR_matrix = togpu(compute_batched_TR_matrix(p))
     f_J3 = togpu(compute_f_J3(p, f))
@@ -306,7 +306,7 @@ function QG3Model(p::QG3ModelParameters)
     k_SH = transform_SH(k, p, g)
 
     ∂k∂μ = SHtoGrid_dμ(k_SH, p, g)
-    ∂k∂λ = transform_grid(_SHtoSH_dφ(k_SH, togpu(g.mm), g.swap_m_sign_array), p, g) ./ (cosϕ .^ 2)
+    ∂k∂λ = transform_grid(SHtoSH_dφ(k_SH, p, g)) ./ (cosϕ .^ 2)
     ∂k∂ϕ = SHtoGrid_dϕ(k_SH, p, g)
 
     return QG3Model(p, g, k, TRcoeffs, TR_matrix, cosϕ, acosϕi, Δ, Tψq, Tqψ, f, f_J3, ∇8, make3d(∇8), ∂k∂ϕ, ∂k∂μ, ∂k∂λ)

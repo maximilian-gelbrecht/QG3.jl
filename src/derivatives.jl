@@ -90,8 +90,8 @@ function _SHtoGrid_dμθ(ψ::AbstractArray{T,2}, dP::AbstractArray{T,3}, p::QG3M
 
     @tullio out[ilat, im] := dP[ilat, il, im] * ψ[il, im]
 
-    Re = @view out[:,1:p.L]
-    Im = @view out[:,p.L+1:end]
+    Re = @view out[:,1:(Int(p.N_lons/2)+1)]
+    Im = @view out[:,(Int(p.N_lons/2)+2):end]
 
     g.iFT * complex.(Re, Im)
 end
@@ -109,8 +109,8 @@ function _SHtoGrid_dμθ(ψ::AbstractArray{T,3}, dP::AbstractArray{T,3}, p::QG3M
 
     @tullio out[ilvl, ilat, im] := dP[ilat, il, im] * ψ[ilvl, il, im]
 
-    Re = @view out[:,:,1:p.L]
-    Im = @view out[:,:,p.L+1:end]
+    Re = @view out[:,:,1:(Int(p.N_lons/2)+1)]
+    Im = @view out[:,:,(Int(p.N_lons/2)+2):end]
 
     g.iFT_3d * complex.(Re, Im)
 end

@@ -1,6 +1,9 @@
 using CUDA
+using Test
+
 
 if CUDA.functional()
+    @testset "Basic GPU capability" begin
 
     using QG3, BenchmarkTools, DifferentialEquations, JLD2
 
@@ -17,12 +20,16 @@ if CUDA.functional()
 
     mean.(abs.(transform_grid(ψ_0_gpu, qg3p_gpu) - transform_grid(ψ_0, qg3p))) < 1e-4
 
-    plan_rfft(A_real[1,:,:], 2)
-    iFT = CUDA.CUFFT.plan_irfft((FT*A_real[1,:,:]), p.N_lons, 2)
+    ψg = transform_grid(ψ_0, qg3p)
+    ψggpu = transform_grid(ψ_0_gpu, qg3p_gpu)
 
+    mean.(abs.(transform_SH(ψggpu, qg3p_gpu) - transform_SH(ψg, qg3p))) < 1e-4
 
+    A = QG3.QG3MM_gpu(q_0_gpu, [qg3p_gpu, S_gpu], 0.)
 
+    B = QG3.QG3MM_base(q_0, [qg3p, S], 0.)
 
+    mean(abs.(A - B)) < 1e-4
     # time step
     DT = 2π/144
     t_end = 500.
@@ -36,9 +43,6 @@ if CUDA.functional()
     else
             return false;
     end
-
-
-
 
 else
     println("No CUDA available, test skipped")
