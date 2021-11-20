@@ -20,14 +20,14 @@ if CUDA.functional()
 
     mean.(abs.(transform_grid(ψ_0_gpu, qg3p_gpu) - transform_grid(ψ_0, qg3p))) < 1e-4
 
-    ψg = transform_grid(ψ_0, qg3p)
+    ψg = transform_grid(ψ_0, qg3p_cpu)
     ψggpu = transform_grid(ψ_0_gpu, qg3p_gpu)
 
-    mean.(abs.(transform_SH(ψggpu, qg3p_gpu) - transform_SH(ψg, qg3p))) < 1e-4
+    mean(abs.(transform_SH(ψggpu, qg3p_gpu) - togpu(transform_SH(ψg, qg3p)))) < 1e-3
 
     A = QG3.QG3MM_gpu(q_0_gpu, [qg3p_gpu, S_gpu], 0.)
 
-    B = QG3.QG3MM_base(q_0, [qg3p, S], 0.)
+    B = QG3.QG3MM_base(q_0, [qg3p_cpu, S], 0.)
 
     mean(abs.(A - B)) < 1e-4
     # time step
