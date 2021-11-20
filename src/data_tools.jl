@@ -49,6 +49,7 @@ function plot_ticks(p::QG3ModelParameters, name, N_interval,digits=2)
     (tickrange, tickvals)
 end
 
+
 """
     load_precomputed_data()
 

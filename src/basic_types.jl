@@ -1,4 +1,3 @@
-
 """
     QG3ModelParameters{T}
 
@@ -92,7 +91,7 @@ function QG3ModelParameters(L::Int, lats::AbstractArray{T,1}, lons::AbstractArra
     ψ_unit = (distance_unit*distance_unit)/(24*60*60*time_unit)
     q_unit = 1/(60*60*24*time_unit)
 
-    return QG3ModelParameters(L, M, N_lats, N_lons, togpu(lats), togpu(colats), togpu(μ), togpu(lons), togpu(LS), togpu(h), R1i, R2i, H0, τRi, τEi, cH, α1, α2, a, Ω, gridtype, time_unit, distance_unit, ψ_unit, q_unit)
+    return QG3ModelParameters(L, M, N_lats, N_lons, lats, colats, μ, lons, LS, h, R1i, R2i, H0, τRi, τEi, cH, α1, α2, a, Ω, gridtype, time_unit, distance_unit, ψ_unit, q_unit)
 end
 
 togpu(p::QG3ModelParameters) = QG3ModelParameters(p.L, p.M, p.N_lats, p.N_lons, togpu(p.lats), togpu(p.colats), togpu(p.μ), togpu(p.lons), togpu(p.LS), togpu(p.h), p.R1i, p.R2i, p.H0, p.τRi, p.τEi, p.cH, p.α1, p.α2, p.a, p.Ω, p.gridtype, p.time_unit, p.distance_unit, p.ψ_unit, p.q_unit)
@@ -116,6 +115,9 @@ struct RegularGrid{T, onGPU} <: AbstractGridType{T, onGPU}
     dPμdμ::AbstractArray{T,3}
     dPcosθdθ::AbstractArray{T,3}
     set_spurious_zero::Bool # set spurious modes zero
+    mm::AbstractArray{T,2} # (-m) SH number matrix, used for zonal derivative
+    mm_3d::AbstractArray{T,3} # (-m) SH number matrix, used for zonal derivative for 3d fields
+    swap_m_sign_array # indexing array, used to swap the sign of the m SH number, used for zonal derivative
 end
 
 struct GaussianGrid{T, onGPU} <: AbstractGridType{T, onGPU}
@@ -123,15 +125,29 @@ struct GaussianGrid{T, onGPU} <: AbstractGridType{T, onGPU}
     Pw::AbstractArray{T,3} # ass. Legendre Polynomials * Gaussian weights
     FT # Fourier transform plan
     iFT # inverse Fourier transform plan
+    FT_3d # Fourier transform plan for fully matrix version with lvl as first dimension
+    iFT_3d # inverse Fourier transform plan for fully matrix version with lvl as first dimension
     truncate_array # truncatation indices
     dPμdμ::AbstractArray{T,3} # derivative of ass. Legendre Polynomials
     dPcosθdθ::AbstractArray{T,3} # derivative of ass. Legendre Polynomials
+    mm::AbstractArray{T,2} # (-m) SH number matrix, used for zonal derivative
+    mm_3d::AbstractArray{T,3} # (-m) SH number matrix, used for zonal derivative for 3d fields
+    swap_m_sign_array # indexing array, used to swap the sign of the m SH number, used for zonal derivative
 end
 
+"""
+    grid(p::QG3ModelParameters{T})
+
+Convience constructor for the [`AbstractGridType`](@ref) based on the parameters set in `p`.
+"""
 function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
 
     dPμdμ, dPcosθdθ, P = compute_P(p)
-    A_real = togpu(rand(T,p.N_lats, p.N_lons))
+    A_real = togpu(rand(T,3, p.N_lats, p.N_lons))
+
+    mm = compute_mmMatrix(p)
+    mm_3d = make3d(mm)
+    swap_m_sign_array = [1;vcat([[2*i+1,2*i] for i=1:p.L-1]...)]
 
     if gridtype=="regular"
         SH = plan_sph2fourier(T, p.N_lats)
@@ -142,29 +158,34 @@ function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
         P_spurious_modes = togpu(prepare_sph_zero_spurious_modes(p))
         setzero
 
-        return RegularGrid(SH, FT, FTinv, ∂_iFT, togpu(P_spurious_modes), togpu(CS), togpu(dPμdμ), togpu(dPcosθdθ), true)
+        return RegularGrid(SH, FT, FTinv, ∂_iFT, P_spurious_modes, CS, dPμdμ, dPcosθdθ, true, mm, mm_3d, swap_m_sign_array)
 
     elseif gridtype=="gaussian"
-        SH = nothing
-        FT = nothing
-        FTinv = nothing
 
         Pw = deepcopy(P)
         Pw = compute_LegendreGauss(p, Pw)
 
         if cuda_used[]
-            FT = CUDA.CUFFT.plan_rfft(A_real, 2)
-            iFT = CUDA.CUFFT.plan_irfft((FT*A_real), p.N_lons, 2)
 
-            truncate_array = [1]
+            mm = reorder_SH_gpu(mm)
+            mm_3d = reorder_SH_gpu(mm_3d)
+            swap_m_sign_array = [1:Int((p.N_lons)/2);Int((p.N_lons)/2)+1 : p.N_lons]
 
-            for im=1:(p.L-1)
-                push!(truncate_array, p.L+im) # Imag part
-                push!(truncate_array, im+1) # Real part
-            end
+            P, Pw, dPμdμ, dPcosθdθ = reorder_SH_gpu(P), reorder_SH_gpu(Pw), reorder_SH_gpu(dPμdμ), reorder_SH_gpu(dPcosθdθ)
+
+            FT = CUDA.CUFFT.plan_rfft(A_real[1,:,:], 2)
+            iFT = CUDA.CUFFT.plan_irfft((FT*A_real[1,:,:]), p.N_lons, 2)
+
+            FT_3d = CUDA.CUFFT.plan_rfft(A_real, 3)
+            iFT_3d = CUDA.CUFFT.plan_irfft((FT*A_real), p.N_lons, 3)
+
+            truncate_array = nothing
         else
-            FT = FFTW.plan_r2r(A_real, FFTW.R2HC, 2)
-            iFT = FFTW.plan_r2r(A_real, FFTW.HC2R, 2)
+            FT = FFTW.plan_r2r(A_real[1,:,:], FFTW.R2HC, 2)
+            iFT = FFTW.plan_r2r(A_real[1,:,:], FFTW.HC2R, 2)
+
+            FT_3d = FFTW.plan_r2r(A_real, FFTW.R2HC, 3)
+            iFT_3d = FFTW.plan_r2r(A_real, FFTW.HC2R, 3)
 
             m_p = 1:p.L
             m_n = p.N_lons:-1:p.N_lons-(p.L-2)
@@ -176,72 +197,96 @@ function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
             end
         end
 
-        return GaussianGrid{T, cuda_used[]}(togpu(P), togpu(Pw), FT, iFT, togpu(truncate_array), togpu(dPμdμ), togpu(dPcosθdθ))
+        return GaussianGrid{T, cuda_used[]}(togpu(P), togpu(Pw), FT, iFT, FT_3d, iFT_3d, togpu(truncate_array), togpu(dPμdμ), togpu(dPcosθdθ), togpu(mm), togpu(mm_3d), togpu(swap_m_sign_array))
     else
         error("Unknown gridtype.")
     end
 end
 grid(p::QG3ModelParameters) = grid(p, p.gridtype)
 
+abstract type AbstractQG3Model{T} end
+
 """
     QG3Model{T}
 
-Holds all parameter and grid information, plus additional pre-computed fields that save computation time during model integration
+Holds all parameter and grid information, plus additional pre-computed fields that save computation time during model integration. All these parameter are seen as constants and not trainable. Should be computed on CPU and can then be transferred to GPU with `togpu(m::QG3Model)`.
+
+# Fields
+
+* `p::QG3ModelParameters{T}` Parameters of the model
+* `g::AbstractGridType{T}` Grid type with pre-computed plans or Legendre polynomals and co.
+* `k::AbstractArray{T,2}` Array, drag coefficient pre-computed from orography and land-sea mask
+* `TRcoeffs::AbstractArray{T,3}` Array of Temperature relaxation coefficients (2d version)
+* `TR_matrix` Matrix for temperature relaxation (3d version)
+* `cosϕ::AbstractArray{T,2}` cos(latitude) pre computed
+* `acosϕi::AbstractArray{T,2}` inverse of a*cos(latitude) pre computed
+* `Δ::AbstractArray{T,2}` # laplace operator in spherical harmonical coordinates
+* `Tψq` matrix used for transforming stream function to voriticy   q = Tψq * ψ + F
+* `Tqψ``inverse of Tψq   ψ = Tqψ*(q - F)
+* `f` modified coriolis vector used in transforming stream function to vorticity
+* `J_f3` coriolis contribution to Jacobian at 850hPa
+* `∇8` 8-th order gradient for horizonatal diffusion
+* `∇8_3d` 8-th order gradient for horizonatal diffusion for 3d field
+* `∂k∂ϕ` derivates of drag coefficients, pre computed for Ekman dissipation
+* `∂k∂μ`
+* `∂k∂λ` includes 1/cos^2ϕ (for Ekman dissipiation computation)
+
 """
-struct QG3Model{T}
-    # all these parameter are seen as constants and not trainable, depending on the gridtype some may be 'nothing' as they are only needed for one of the grid types / transform variants
+struct QG3Model{T} <: AbstractQG3Model{T}
     p::QG3ModelParameters{T}
-    g::AbstractGridType{T} # Grid type with pre-computed plans or Legendre polynomals and co.
-
-    k::AbstractArray{T,2} # Array, drag coefficient pre-computed from orography and land-sea mask
-    TRcoeffs::AbstractArray{T,3} # Array of Temperature relaxation coefficients
-
-    cosϕ::AbstractArray{T,2} # cos(latitude) pre computed
-    acosϕi::AbstractArray{T,2} # inverse of a*cos(latitude) pre computed
-    Δ::AbstractArray{T,2} # laplace operator in spherical harmonical coordinates
-    mm::AbstractArray{T,2} # (-m) SH number matrix, used for zonal derivative
-    swap_m_sign_array # indexing array, used to swap the sign of the m SH number, used for zonal derivative
-
-    Tψq # matrix used for transforming stream function to voriticy   q = Tψq * ψ + F
-    Tqψ # inverse of Tψq   ψ = Tqψ*(q - F)
-    f # modified coriolis vector used in transforming stream function to vorticity
-    ∇8 # 8-th order gradient for horizonatal diffusion
-
-    ∂k∂ϕ # derivates of drag coefficients, pre computed , ∂k∂ϕ includes 1/cos^2ϕ
+    g::AbstractGridType{T}
+    k::AbstractArray{T,2}
+    TRcoeffs::AbstractArray{T,3}
+    TR_matrix
+    cosϕ::AbstractArray{T,2}
+    acosϕi::AbstractArray{T,2}
+    Δ::AbstractArray{T,2}
+    Tψq
+    Tqψ
+    f
+    f_J3
+    ∇8
+    ∇8_3d
+    ∂k∂ϕ
     ∂k∂μ
     ∂k∂λ
 end
-
 
 """
     QG3Model(p::QG3ModelParameters)
 
 Routine that pre computes the QG3 Model and returns a QG3Model struct with all precomputed fields except for the forcing.
+
+The pre-computation is always done on CPU due to scalar indexing being used, if a GPU is avaible the final result is then transferred to the GPU.
 """
 function QG3Model(p::QG3ModelParameters)
-    k = compute_k(p)
-    cosϕ = compute_cosϕ(p)
-    acosϕi = compute_acosϕi(p)
+
+    p = togpu(p)
+
+    k = togpu(compute_k(p))
+    cosϕ = togpu(compute_cosϕ(p))
+    acosϕi = togpu(compute_acosϕi(p))
 
     g = grid(p)
 
-    Δ = compute_Δ(p)
-    mm = compute_mmMatrix(p)
-    swap_m_sign_array = [1;vcat([[2*i+1,2*i] for i=1:p.L-1]...)]
+    Δ = togpu(compute_Δ(p))
 
     Tqψ, Tψq = compute_batched_ψq_transform_matrices(p, Δ)
-    TRcoeffs = compute_TR(p)
+    Tqψ, Tψq = togpu(Tqψ), togpu(Tψq)
 
-    f = transform_SH(togpu(compute_coriolis_vector_grid(p)), p, g)
-    ∇8 = compute_∇8(p)
+    TRcoeffs = togpu(compute_TR(p))
+    f = transform_SH(compute_coriolis_vector_grid(p), p, g)
 
-    k_SH = transform_SH(togpu(k), p, g)
+    TR_matrix = togpu(compute_batched_TR_matrix(p))
+    f_J3 = togpu(compute_f_J3(p, f))
+
+    ∇8 = togpu(compute_∇8(p))
+
+    k_SH = transform_SH(k, p, g)
 
     ∂k∂μ = SHtoGrid_dμ(k_SH, p, g)
-    ∂k∂λ = transform_grid(_SHtoSH_dφ(k_SH, togpu(mm), togpu(swap_m_sign_array)), p, g) ./ togpu((cosϕ .^ 2))
+    ∂k∂λ = transform_grid(_SHtoSH_dφ(k_SH, togpu(g.mm), g.swap_m_sign_array), p, g) ./ (cosϕ .^ 2)
     ∂k∂ϕ = SHtoGrid_dϕ(k_SH, p, g)
 
-    return QG3Model(p, g, togpu(k), togpu(TRcoeffs), togpu(cosϕ), togpu(acosϕi), togpu(Δ), togpu(mm), togpu(swap_m_sign_array), togpu(Tψq), togpu(Tqψ), togpu(f), togpu(∇8), togpu(∂k∂ϕ), togpu(∂k∂μ), togpu(∂k∂λ))
+    return QG3Model(p, g, k, TRcoeffs, TR_matrix, cosϕ, acosϕi, Δ, Tψq, Tqψ, f, f_J3, ∇8, make3d(∇8), ∂k∂ϕ, ∂k∂μ, ∂k∂λ)
 end
-
-togpu(m::QG3Model) = QG3Model(togpu(m.p), grid(togpu(m.p)), togpu(m.k), togpu(m.TRcoeffs), togpu(m.cosϕ), togpu(m.acosϕi), togpu(m.Δ), togpu(m.mm), togpu(m.swap_m_sign_array), togpu(m.Tψq), togpu(m.Tqψ), togpu(m.f), togpu(m.∇8), togpu(m.∂k∂ϕ), togpu(m.∂k∂μ), togpu(m.∂k∂λ))

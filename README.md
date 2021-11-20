@@ -23,3 +23,5 @@ Its governing equation for the quasigeostrophic vorticity $`q_i`$ in three equip
 \vec{q} = T_{\psi q} \vec{\psi}
 ```
 where the voriticy $`q`$ and streamfunction $`\psi`$ are related by a linear operator (comprising the Laplacian and temperature relaxation), $`J`$ is the Jacobian / advection term, $`D`$ the dissipation and $`S`$ a forcing computed from data.
+
+Currently there are two different implementations, one that is optimised for CPU (the "2D version") and one that is optimised for GPU (the "3D version"). The GPU version can also run on CPU but not the other way around.

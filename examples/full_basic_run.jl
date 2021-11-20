@@ -4,7 +4,7 @@ using QG3, NetCDF, CFTime, Dates, BenchmarkTools, DifferentialEquations
 
 # first we import the data (streamfunction), land sea mask, orography etc
 begin
-        DIR = "../data/"
+        DIR = "data/"
         NAME = "ERA5-sf-t21q.nc"
         LSNAME = "land-t21.nc"
         ORONAME = "oro-t21.nc"

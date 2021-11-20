@@ -2,7 +2,6 @@
 # Right now there are three different variants possible
 # a) A self implemented Gaussian Grid based version
 # b) Fast Transforms.jl for regular grids
-# c) Spherepack via pyspharm. c) should only be used as a comparision and to check that everything is working as expected
 #
 #
 
@@ -15,7 +14,8 @@
 
 Pre-compute ass. Legendre Polynomials and dP/dx (derivative of ass. Legendre Polynomial) at the grid points and also the remainder of the Spherical Harmonics at the grid points using GSL
 
-m values are stored 0,-1,1,-2,2,-3,3,...
+m values are stored 0,-1,1,-2,2,-3,3,... (on CPU)
+m values are stored 0,1,2,3,4,5,6,7, ...l_max, 0 (nothing),-1, -2, -3, (on GPU)  (the second 0 is the Imanigary part / sin part of the fourier transform which is always identical to zero, it is kept here to have equal matrix sizes)
 
 # so far only |m| is used, as I assume real SPH.
 
@@ -53,6 +53,31 @@ function compute_P(L::Integer, M::Integer, μ::AbstractArray{T,1}; sh_norm=GSL_S
 end
 compute_P(p::QG3ModelParameters; kwargs...) = compute_P(p.L, p.M, p.μ; kwargs...)
 
+"""
+Reorders the SH coefficient so that computations on GPU are more efficient, it also includes the truncation as the SH array has size N_lat x N_lon, however all entries outside of L x M are zeroes.
+
+Original order (FastTransforms.jl) columns by m : 0, -1, 1, -2, -2, ....
+
+New order columns by m: 0, 1, 2, ... l_max, 0 (nothing), -1, -2, ..
+
+2d input assumes L x M matrix, (all fields in SH), also enlarges the matrix to include truncation (additional elements are zero) to N_lat x N_lons
+3d input assumes N_lat x L x M matrix (e.g. precomputed legendre polynomials), also enlarges the matrix to include truncation (additional elements are zero) to N_lat x N_lats x N_lons
+"""
+function reorder_SH_gpu(A::AbstractArray{T,2}, p::QG3ModelParameters{T}) where T<:Number
+    reindex = [1:2:p.N_lons; 2:2:p.N_lons]
+    out = zeros(T, p.N_lats, p.N_lons)
+    out[1:p.L, 1:p.M] = A
+    return togpu(A[:,reindex])
+end
+
+function reorder_SH_gpu(A::AbstractArray{T,3}, p::QG3ModelParameters{T}) where T<:Number
+    reindex = [1:2:p.N_lons; 2:2:p.N_lons]
+
+    out = zeros(T, p.N_lats, p.N_lats, p.N_lons)
+    out[:, 1:p.L, 1:p.M] = A
+    return togpu(A[:,:,reindex])
+end
+
 function get_uppertriangle_sum(A)
     cumsum = 0
     for i=1:size(A,1)
@@ -85,6 +110,8 @@ end
     change_msign(A)
 
 Change the sign of the m in SH (FastTranforms.jl convention of storing them). This version returns a view
+
+there is currently a bug or at least missing feature in Zygote, the AD library, that stops views from always working flawlessly when a view is mixed with prior indexing of an array. We need a view for the derivative after φ to change the sign of m, so here is a differentiable variant of the SHtoSH_dφ function for the 2d field
 """
 change_msign(A::AbstractArray{T,2}, swap_array) where T<:Number = view(A,:,swap_array)
 
@@ -95,30 +122,47 @@ end
 
 _change_msign(A::AbstractArray{T,3}, i, arr) where T<:Number = @inbounds view(A,i,:,arr)
 
+# 3d field version
+change_msign(A::AbstractArray{T,3}, swap_array) where T<:Number = @inbounds view(A,:,:,swap_array)
 
 
-shift_L_minus(ψ::AbstractArray{T,2}) where T<:Number = vcat(transpose(zeros(T,size(ψ,2))), ψ[1:end-1,:])
 
-shift_L_minus(ψ::AbstractArray{T,3}) where T<:Number = cat(zeros(T,1,size(ψ,2),size(ψ,3)), ψ[1:end-1,:,:],dims=1)
+"""
+Return l-Matrix of SH coefficients in convention of FastTransforms.jl
+"""
+function lMatrix(L, M)
+    l = zeros(Int, L, M)
 
-shift_L_plus(ψ::AbstractArray{T,2}) where T<:Number = vcat(ψ[2:end,:], transpose(zeros(T,size(ψ,2))))
-
-shift_L_plus(ψ::AbstractArray{T,3}) where T<:Number = cat(ψ[2:end,:,:],zeros(T,1,size(ψ,2),size(ψ,3)),dims=1)
-
-function set_Lval_zero(ψ::AbstractArray{T,2}, l::Int, p::QG3ModelParameters) where T<:Number
-    o = copy(ψ)
-    lM = lMatrix(p)
-    o[lM .== l] .= 0
-    return o
-end
-
-function set_Lval_zero(ψ::AbstractArray{T,3}, l::Int, p::QG3ModelParameters) where T<:Number
-    o = similar(ψ)
-    for i=1:size(ψ,3)
-        o[:,:,i] = set_Lval_zero(ψ[:,:,i],l,p)
+    for m ∈ -(L-1):(L-1)
+        im = m<0 ? 2*abs(m) : 2*m+1
+        l[1:L-abs(m),im] = abs(m):(L-1)
     end
-    return o
+
+    return l
 end
+lMatrix(p::QG3ModelParameters) = lMatrix(p.L, p.M)
+lMatrix(p::QG3Model) = lMatrix(p.p)
+
+"""
+Pre-compute a matrix with (m) values of the SH matrix format of FastTransforms.jl, used for zonal derivative
+"""
+function compute_mmMatrix(L::Integer, M::Integer) where T<:Number
+    mmMat = zeros(L,M)
+    for m ∈ -(L-1):(L-1)
+        for il ∈ 1:(L - abs(m))
+            if m<0
+                mmMat[il, 2*abs(m)] = m
+            else
+                mmMat[il, 2*m+1] = m
+            end
+        end
+    end
+    mmMat
+end
+compute_mmMatrix(p::QG3ModelParameters{T}) where T<:Number = T.(compute_mmMatrix(p.L,p.M))
+compute_mmMatrix(p::QG3Model) = compute_mmMatrix(p.p)
+
+
 
 # test this
 # Y_lm(π - θ, ϕ) = (-1)^(l+m) Y_lm(θ, ϕ)
@@ -174,28 +218,51 @@ function compute_LegendreGauss(p::QG3ModelParameters{T}, P::AbstractArray{T,3}; 
     return compute_LegendreGauss(p, P, w)
 end
 
-sphφevaluateDFT(φ::T, M::Integer, N_lons::Integer) where T<:Number = T(2/N_lons)*(M ≥ 0 ? cos(M*φ) : sin(-M*φ))
-
 
 """
 manually implemented transform from spherical harmonics to grid. This works for all grid types, the grid type is indirectly specified through the pre-computed ass. legendre polynomials
 
-CPU variant
+CPU variant, for 2D Field
 """
 function transformSHtoGGrid(A::AbstractArray{T,2}, p::QG3ModelParameters{T}, g::GaussianGrid{T, false}) where T<:Number
 
-    out = batched_vec(g.P,A)
+    out = batched_vec(g.P, A)
 
     # pad with zeros and adjust to indexing of FFTW
     g.iFT * cat(out[:,1:2:end], zeros(T, p.N_lats, p.N_lons - p.M), out[:,end-1:-2:2], dims=2)
+end
+
+"""
+manually implemented transform from spherical harmonics to grid. This works for all grid types, the grid type is indirectly specified through the pre-computed ass. legendre polynomials
+
+CPU variant, for 3D Array
+"""
+function transformSHtoGGrid(A::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::GaussianGrid{T, false}) where T<:Number
+
+    @tullio out[lvl, ilat, im] := g.P[ilat, il, im] * A[lvl, il, im]
+
+    # pad with zeros and adjust to indexing of FFTW
+    g.iFT_3d * cat(out[:,:,1:2:end], zeros(T, p.N_lats, p.N_lons - p.M), out[:,:,end-1:-2:2], dims=3)
 end
 
 # GPU/CUDA variant
 function transformSHtoGGrid(A::AbstractArray{T,2}, p::QG3ModelParameters{T}, g::GaussianGrid{T, true}) where T<:Number
     out = batched_vec(g.P,A)
 
-    # pad with zeros and adjust to complex valued of CUDA FFT
-    g.iFT * complex.(cat(out[:,1:2:end], CUDA.zeros(T, p.N_lats, div(p.N_lons,2) + 1 - p.L), dims=2), cat(CUDA.zeros(T,p.N_lats,1), out[:,2:2:end], CUDA.zeros(T, p.N_lats, div(p.N_lons,2) + 1 - p.L), dims=2))
+    Re = @view out[:,1:p.L]
+    Im = @view out[:,p.L+1:end]
+
+    g.iFT * complex.(Re, Im)
+end
+
+# GPU/CUDA variant for 3d field
+function transformSHtoGGrid(A::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::GaussianGrid{T, true}) where T<:Number
+    @tullio out[ilvl, ilat, im] := g.P[ilat, il, im] * A[ilvl, il, im]
+
+    Re = @view out[:,:,1:p.L]
+    Im = @view out[:,:,p.L+1:end]
+
+    g.iFT_3d * complex.(Re, Im)
 end
 
 """
@@ -210,29 +277,53 @@ function transformGGridtoSH(A::AbstractArray{T,2}, p::QG3ModelParameters{T}, g::
     @tullio out[il,im] := g.Pw[i,il,im] * FTA[i,im]
 end
 
+"""
+manually implemented transfrom from grid to spherical space, so far only for gaussian grid
 
+CPU variant, 3D vectorized variant
+"""
+function transformGGridtoSH(A::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::GaussianGrid{T, false}) where T<:Number
+
+    FTA = (g.FT * A)[:,:,g.truncate_array] ./ p.N_lons # has to be normalized as this is not done by FFTW
+
+    @tullio out[ilvl,il,im] := g.Pw[ilat,il,im] * FTA[ilvl,ilat,im]
+end
 
 
 """
 manually implemented transfrom from grid to spherical space, so far only for gaussian grid
 
-GPU variant, r2c fft instead of r2r fft
+GPU variant, r2c fft instead of r2r fft only for the full 3d field
 """
 function transformGGridtoSH(A::AbstractArray{T,2}, p::QG3ModelParameters{T}, g::GaussianGrid{T, true}) where T<:Number
 
     FTA = g.FT * A
 
-    # deal with the complex array, turn it into half complex format and truncate
+    # deal with the complex array, turn it into half complex format
     FTA_HC = reinterpret(T, FTA)
     Re_FTA = @view FTA_HC[1:2:(end-1), 1:p.L]
     Im_FTA = @view FTA_HC[2:2:end, 2:p.L]
 
-    # into the convention of fasttransform.jl
-    HCr = cat(Re_FTA, Im_FTA, dims=2)[:,g.truncate_array]
+    HCr = cat(Re_FTA, Im_FTA, dims=2)
 
+    # truncation is performed in this step as Pw has 0s where the expansion is truncated
     @tullio out[il,im] := g.Pw[i,il,im] * HCr[i,im]
 end
 
+function transformGGridtoSH(A::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::GaussianGrid{T, true}) where T<:Number
+
+    FTA = g.FT_3d * A
+
+    # deal with the complex array, turn it into half complex format
+    FTA_HC = reinterpret(T, FTA)
+    Re_FTA = @view FTA_HC[1:2:(end-1), 1:p.L]
+    Im_FTA = @view FTA_HC[2:2:end, 2:p.L]
+
+    HCr = cat(Re_FTA, Im_FTA, dims=2)
+
+    # truncation is performed in this step as Pw has 0s where the expansion is truncated
+    @tullio out[ilvl,il,im] := g.Pw[ilat,il,im] * HCr[ilvl,ilat,im]
+end
 
 
 #b) FastTransform.jl
