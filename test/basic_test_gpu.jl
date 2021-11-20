@@ -7,7 +7,7 @@ if CUDA.functional()
     # load forcing and model parameters
     S, qg3ppars, ψ_0, q_0 = QG3.load_precomputed_data()
     S, qg3ppars, ψ_0, q_0 = togpu(S), togpu(qg3ppars), QG3.reorder_SH_gpu(ψ_0), QG3.reorder_SH_gpu(q_0)
-    
+
     qg3p = QG3Model(qg3ppars)
 
     # time step
@@ -29,5 +29,4 @@ if CUDA.functional()
 
 else
     println("No CUDA available, test skipped")
-    return true
 end

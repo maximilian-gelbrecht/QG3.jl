@@ -24,7 +24,7 @@ function add_to_level(ψ::AbstractArray{T,3}, ψ_i::AbstractArray{T,2}, i::Integ
 end
 
 Zygote.@adjoint function add_to_level(ψ::AbstractArray{T,3}, ψ_i::AbstractArray{T,2}, i::Integer) where T<:Number
-    return (add_to_level!(ψ, ψ_i::AbstractArray{T,2}, i), Δ->(Δ,Δ,))
+    return (add_to_level(ψ, ψ_i::AbstractArray{T,2}, i), Δ->(Δ,Δ,))
 end
 
 

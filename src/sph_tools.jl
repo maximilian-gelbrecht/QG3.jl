@@ -242,7 +242,7 @@ function transformSHtoGGrid(A::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::
     @tullio out[lvl, ilat, im] := g.P[ilat, il, im] * A[lvl, il, im]
 
     # pad with zeros and adjust to indexing of FFTW
-    g.iFT_3d * cat(out[:,:,1:2:end], zeros(T, p.N_lats, p.N_lons - p.M), out[:,:,end-1:-2:2], dims=3)
+    g.iFT_3d * cat(out[:,:,1:2:end], zeros(T, 3, p.N_lats, p.N_lons - p.M), out[:,:,end-1:-2:2], dims=3)
 end
 
 # GPU/CUDA variant
@@ -284,7 +284,7 @@ CPU variant, 3D vectorized variant
 """
 function transformGGridtoSH(A::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::GaussianGrid{T, false}) where T<:Number
 
-    FTA = (g.FT * A)[:,:,g.truncate_array] ./ p.N_lons # has to be normalized as this is not done by FFTW
+    FTA = (g.FT_3d * A)[:,:,g.truncate_array] ./ p.N_lons # has to be normalized as this is not done by FFTW
 
     @tullio out[ilvl,il,im] := g.Pw[ilat,il,im] * FTA[ilvl,ilat,im]
 end
@@ -412,6 +412,9 @@ transform_SH(data::AbstractArray{T,2}, p::QG3ModelParameters{T}, g::GaussianGrid
 
 transform_SH(data::AbstractArray{T,2}, p::QG3ModelParameters{T}, g::RegularGrid{T}; kwargs...) where T<:Number = truncate(transform_SH_FT(data, g.SH, g.FT, g.P_spurious_modes; setzeros=g.set_spurious_zero), p)
 
+
+transform_SH(data::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::GaussianGrid; kwargs...) where T<:Number = transformGGridtoSH(data, p, g)
+
 function transform_SH(data::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::AbstractGridType{T,false}; kwargs...) where T<:Number
     if size(data,1)!=3
         @error("First dimension is not three")
@@ -475,6 +478,8 @@ function transform_grid(data::AbstractArray{T,2}, m::QG3Model; varname::String="
 transform_grid(data::AbstractArray{T,2}, p::QG3ModelParameters{T}, g::GaussianGrid{T}; kwargs...) where T<:Number = transformSHtoGGrid(data, p, g)
 
 transform_grid(data::AbstractArray{T,2}, p::QG3ModelParameters{T}, g::RegularGrid{T}; kwargs...) where T<:Number = togpu(g.FTinv*(g.SH*revert_truncate(data, p)))
+
+transform_grid(data::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::GaussianGrid; varname::String="ψ") where T<: Number = transformSHtoGGrid(data, p, g)
 
 function transform_grid(data::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::AbstractGridType{T, false}; varname::String="ψ") where T<:Number
     if size(data,1)!=3
