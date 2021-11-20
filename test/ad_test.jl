@@ -38,3 +38,5 @@ end
 B = g[a]
 
 @test mean(abs.(A - B)) < 1e-10
+
+end
