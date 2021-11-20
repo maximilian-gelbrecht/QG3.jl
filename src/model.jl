@@ -20,7 +20,7 @@ This version is slightly slower than the old one on CPU (as it not aware of the 
 It replaces the double loop over the coefficient matrix with a batched vector multiply. The advantage other besides it being non-mutating is that it is optimised for GPU, so it might actually be faster on the GPU than doing a manual loop.
 """
 function ψtoqprime(p::QG3Model{T}, ψ::AbstractArray{T,3}) where T<:Number
-    return cuda_used[] ? reshape(batched_vec(p.Tψq, reshape(ψ,3,:)),3 , p.p.N_lats, p.p.N_lons) : reshape(batched_vec(p.Tψq, reshape(ψ,3,:)),3 , p.p.L, p.p.M)
+    return cuda_used[] ? reshape(batched_vec(p.Tψq, reshape(ψ,3,:)),3 , p.p.N_lats, p.p.N_lons + 2) : reshape(batched_vec(p.Tψq, reshape(ψ,3,:)),3 , p.p.L, p.p.M)
 end
 
 """
@@ -41,7 +41,7 @@ This version is slightly slower than the old one (as it not aware of the matrix 
 It replaces the double loop over the coefficient matrix with a batched vector multiply. The advantage of that is that it is optimised for GPU, so it might actually be faster on the GPU than doing a manual loop.
 """
 function qprimetoψ(p::QG3Model{T}, q::AbstractArray{T,3}) where T<:Number
-    return cuda_used[] ? reshape(batched_vec(p.Tqψ, reshape(q,3,:)),3 , p.p.N_lats, p.p.N_lons) : reshape(batched_vec(p.Tqψ, reshape(q,3,:)),3 , p.p.L, p.p.M)
+    return cuda_used[] ? reshape(batched_vec(p.Tqψ, reshape(q,3,:)),3 , p.p.N_lats, p.p.N_lons + 2) : reshape(batched_vec(p.Tqψ, reshape(q,3,:)),3 , p.p.L, p.p.M)
 end
 
 """

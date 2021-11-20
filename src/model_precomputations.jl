@@ -65,13 +65,13 @@ end
 function compute_batched_ψq_transform_matrices(p::QG3ModelParameters{T}, Tqψ, Tψq) where T<:Number
 
     if cuda_used[]
-        bTψq = zeros(T,3,3,p.N_lats,p.N_lons)
-        bTqψ = zeros(T,3,3,p.N_lats,p.N_lons)
+        bTψq = zeros(T,3,3,p.N_lats,p.N_lons+2)
+        bTqψ = zeros(T,3,3,p.N_lats,p.N_lons+2)
 
         for m ∈ -(p.L-1):(p.L-1)
             for il ∈ 1:(p.L - abs(m))
                 l = il + abs(m) - 1
-                im = m < 0 ? abs(m) + Int(p.N_lons/2) + 1 : m
+                im = m < 0 ? abs(m) + Int(p.N_lons/2) + 2 : m + 1
                 bTψq[:,:,il,im] = Tψq[l+1,:,:]
                 bTqψ[:,:,il,im] = Tqψ[l+1,:,:]
             end
@@ -135,12 +135,12 @@ end
 function compute_batched_TR_matrix(p::QG3ModelParameters{T}, TR::AbstractArray{T,3}) where T<:Number
 
     if cuda_used[]
-        bTR = zeros(T,3,3,p.N_lats,p.N_lons)
+        bTR = zeros(T,3,3,p.N_lats,p.N_lons+2)
 
         for m ∈ -(p.L-1):(p.L-1)
             for il ∈ 1:(p.L - abs(m))
                 l = il + abs(m) - 1
-                im = m < 0 ? abs(m) + Int(p.N_lons/2) + 1 : m
+                im = m < 0 ? abs(m) + Int(p.N_lons/2) + 2 : m + 1
                 bTR[:,:,il,im] = TR[l+1,:,:]
             end
         end

@@ -60,16 +60,16 @@ New order columns by m: 0, 1, 2, ... l_max, 0 (nothing), -1, -2, ..
 3d input assumes N_lat (or 3) x L x M matrix (e.g. precomputed legendre polynomials), also enlarges the matrix to include truncation (additional elements are zero) to N_lat (or 3) x N_lats x N_lons
 """
 function reorder_SH_gpu(A::AbstractArray{T,2}, p::QG3ModelParameters{T}) where T<:Number
-    reindex = [1:2:p.N_lons; 2:2:p.N_lons]
-    out = zeros(T, p.N_lats, p.N_lons)
+    reindex = [1:2:(p.N_lons+2); 2:2:(p.N_lons+2)]
+    out = zeros(T, p.N_lats, p.N_lons+2)
     out[1:p.L, 1:p.M] = A
     return togpu(out[:,reindex])
 end
 
 function reorder_SH_gpu(A::AbstractArray{T,3}, p::QG3ModelParameters{T}) where T<:Number
-    reindex = [1:2:p.N_lons; 2:2:p.N_lons]
+    reindex = [1:2:(p.N_lons+2); 2:2:(p.N_lons+2)]
 
-    out = zeros(T, size(A, 1), p.N_lats, p.N_lons)
+    out = zeros(T, size(A, 1), p.N_lats, p.N_lons+2)
     out[:, 1:p.L, 1:p.M] = A
     return togpu(out[:,:,reindex])
 end
@@ -245,8 +245,8 @@ end
 function transformSHtoGGrid(A::AbstractArray{T,2}, p::QG3ModelParameters{T}, g::GaussianGrid{T, true}) where T<:Number
     out = batched_vec(g.P,A)
 
-    Re = @view out[:,1:p.L]
-    Im = @view out[:,p.L+1:end]
+    Re = @view out[:,1:(Int(p.N_lons/2)+1)]
+    Im = @view out[:,(Int(p.N_lons/2)+2):end]
 
     g.iFT * complex.(Re, Im)
 end
@@ -255,8 +255,8 @@ end
 function transformSHtoGGrid(A::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::GaussianGrid{T, true}) where T<:Number
     @tullio out[ilvl, ilat, im] := g.P[ilat, il, im] * A[ilvl, il, im]
 
-    Re = @view out[:,:,1:p.L]
-    Im = @view out[:,:,p.L+1:end]
+    Re = @view out[:,:,1:(Int(p.N_lons/2)+1)]
+    Im = @view out[:,:,(Int(p.N_lons/2)+2):end]
 
     g.iFT_3d * complex.(Re, Im)
 end
@@ -296,11 +296,7 @@ function transformGGridtoSH(A::AbstractArray{T,2}, p::QG3ModelParameters{T}, g::
     FTA = g.FT * A
 
     # deal with the complex array, turn it into half complex format
-    FTA_HC = reinterpret(T, FTA)
-    Re_FTA = @view FTA_HC[1:2:(end-1), 1:p.L]
-    Im_FTA = @view FTA_HC[2:2:end, 2:p.L]
-
-    HCr = cat(Re_FTA, Im_FTA, dims=2)
+    HCr = cat(real.(FTA), imag.(FTA), dims=3)
 
     # truncation is performed in this step as Pw has 0s where the expansion is truncated
     @tullio out[il,im] := g.Pw[i,il,im] * HCr[i,im]
@@ -311,11 +307,7 @@ function transformGGridtoSH(A::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::
     FTA = g.FT_3d * A
 
     # deal with the complex array, turn it into half complex format
-    FTA_HC = reinterpret(T, FTA)
-    Re_FTA = @view FTA_HC[1:2:(end-1), 1:p.L]
-    Im_FTA = @view FTA_HC[2:2:end, 2:p.L]
-
-    HCr = cat(Re_FTA, Im_FTA, dims=2)
+    HCr = cat(real.(FTA), imag.(FTA), dims=3)
 
     # truncation is performed in this step as Pw has 0s where the expansion is truncated
     @tullio out[ilvl,il,im] := g.Pw[ilat,il,im] * HCr[ilvl,ilat,im]
@@ -422,17 +414,6 @@ function transform_SH(data::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::Abs
     return data_sh
 end
 
-function transform_SH(data::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::AbstractGridType{T,true}; kwargs...) where T<:Number
-    if size(data,1)!=3
-        @error("First dimension is not three")
-    end
-    data_sh = CUDA.zeros(T,3,p.L,p.M)
-    for i ∈ 1:3
-        data_sh[i,:,:] = transform_SH(data[i,:,:], p, g; kwargs...)
-    end
-    return data_sh
-end
-
 function transform_SH(data::AbstractArray{T,4}, p::QG3ModelParameters{T}, g::AbstractGridType{T,false}; kwargs...) where T<:Number
     data_sh = zeros(T, 3, p.L, p.M,size(data,4))
     for it ∈ 1:size(data,4)
@@ -442,7 +423,7 @@ function transform_SH(data::AbstractArray{T,4}, p::QG3ModelParameters{T}, g::Abs
 end
 
 function transform_SH(data::AbstractArray{T,4}, p::QG3ModelParameters{T}, g::AbstractGridType{T,true}; kwargs...) where T<:Number
-    data_sh = CUDA.zeros(T, 3, p.L, p.M,size(data,4))
+    data_sh = CUDA.zeros(T, 3, p.N_lats, p.N_lons+2, size(data,4))
     for it ∈ 1:size(data,4)
         data_sh[:,:,:,it] = transform_SH(data[:,:,:,it], p, g; kwargs...)
     end
@@ -488,17 +469,6 @@ function transform_grid(data::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::A
     return data_sh
 end
 
-function transform_grid(data::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::AbstractGridType{T, true}; varname::String="ψ") where T<:Number
-    if size(data,1)!=3
-        @error("First dimension is not three")
-    end
-    data_sh = CUDA.zeros(T,3,p.N_lats,p.N_lons)
-    for i ∈ 1:3
-        data_sh[i,:,:] = transform_grid(data[i,:,:], p, g; varname=varname)
-    end
-    return data_sh
-end
-
 transform_grid(data::AbstractArray{T,3}, m::QG3Model{T}; kwargs...) where T<:Number = transform_grid(data, m.p, m.g; kwargs...)
 transform_grid(data::AbstractArray{T,4}, m::QG3Model{T}; kwargs...) where T<:Number = transform_grid(data, m.p, m.g; kwargs...)
 
@@ -511,7 +481,7 @@ function transform_grid(data::AbstractArray{T,4}, p::QG3ModelParameters{T}, g::A
 end
 
 function transform_grid(data::AbstractArray{T,4}, p::QG3ModelParameters{T}, g::AbstractGridType{T, false}; kwargs...) where T<:Number
-    data_sh = zeros(T,3, p.N_lats, p.N_lon,size(data,4))
+    data_sh = zeros(T,3, p.N_lats, p.N_lon, size(data,4))
     for it ∈ 1:size(data,4)
         data_sh[:,:,:,it] = transform_grid(data[:,:,:,it], p, g; varname=varname)
     end
