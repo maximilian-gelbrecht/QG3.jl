@@ -14,7 +14,7 @@ if CUDA.functional()
     qg3p_cpu = QG3Model(qg3ppars)
     QG3.gpuon()
 
-    S_gpu, qg3ppars_gpu, ψ_0_gpu, q_0_gpu= togpu(S), togpu(qg3ppars), QG3.reorder_SH_gpu(ψ_0), QG3.reorder_SH_gpu(q_0)
+    S_gpu, qg3ppars_gpu, ψ_0_gpu, q_0_gpu = QG3.reorder_SH_gpu(S, qg3ppars), togpu(qg3ppars), QG3.reorder_SH_gpu(ψ_0, qg3ppars), QG3.reorder_SH_gpu(q_0, qg3ppars)
 
     qg3p_gpu = QG3Model(qg3ppars_gpu)
 
