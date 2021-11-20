@@ -218,7 +218,7 @@ function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
             end
         end
 
-        return GaussianGrid{T, cuda_used[]}(togpu(P), togpu(Pw), FT, iFT, FT_3d, iFT_3d, togpu(truncate_array), togpu(dPμdμ), togpu(dPcosθdθ), togpu(mm), togpu(mm_3d), togpu(swap_m_sign_array))
+        return GaussianGrid{T, cuda_used[]}(togpu(P), togpu(Pw), FT, iFT, FT_3d, iFT_3d, truncate_array, togpu(dPμdμ), togpu(dPcosθdθ), togpu(mm), togpu(mm_3d), togpu(swap_m_sign_array))
     else
         error("Unknown gridtype.")
     end

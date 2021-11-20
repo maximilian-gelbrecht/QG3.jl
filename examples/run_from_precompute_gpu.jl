@@ -18,7 +18,7 @@ S, qg3ppars, ψ_0, q_0 = QG3.reorder_SH_gpu(S, qg3ppars), togpu(qg3ppars), QG3.r
 
 
 # pre-computations are partially performed on CPU, so we have to allow scalarindexing
-qg3p = QG3Model(qg3ppars)
+qg3p = CUDA.@allowscalar QG3Model(qg3ppars)
 
 # time step
 DT = 2π/144

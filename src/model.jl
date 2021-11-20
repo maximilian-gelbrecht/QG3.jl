@@ -44,7 +44,6 @@ function qprimetoψ(p::QG3Model{T}, q::AbstractArray{T,3}) where T<:Number
     return cuda_used[] ? reshape(batched_vec(p.Tqψ, reshape(q,3,:)),3 , p.p.N_lats, p.p.N_lons) : reshape(batched_vec(p.Tqψ, reshape(q,3,:)),3 , p.p.L, p.p.M)
 end
 
-
 """
 Compute the Jacobian determinant from ψ and q in μ,λ coordinates, J = ∂ψ/∂x ∂q/∂y - ∂ψ/∂y ∂q/∂x = 1/a^2cosϕ ( - ∂ψ/∂λ ∂q/∂ϕ + ∂ψ/∂ϕ ∂q/∂λ) =  1/a^2 (- ∂ψ/∂λ ∂q/∂μ + ∂ψ/∂μ ∂q/∂λ)
 
@@ -73,18 +72,9 @@ Ekman dissipation
 """
 EK(ψ::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = transform_SH(SHtoGrid_dϕ(view(ψ,3,:,:), m) .* m.∂k∂ϕ + SHtoGrid_dλ(view(ψ,3,:,:), m) .* m.∂k∂λ + m.k .* transform_grid(m.Δ .* view(ψ,3,:,:), m), m)
 
-
-"""
-Simplified Ekman dissipiation for k(ϕ,λ) = const
-"""
-EK3_simple(ψ::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = m.p.τEi .* m.Δ .* ψ[3,:,:]
-
-
 D1(ψ::AbstractArray{T,3}, qprime::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = -TR12(m, ψ) + H(qprime, 1, m)
 D2(ψ::AbstractArray{T,3}, qprime::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = TR12(m, ψ) - TR23(m, ψ) + H(qprime, 2, m)
 D3(ψ::AbstractArray{T,3}, qprime::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = TR23(m, ψ) + EK(ψ, m) + H(qprime, 3, m)
-
-D3_simple(ψ::AbstractArray{T,3}, qprime::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = TR23(m, ψ) + EK3_simple(ψ, m) + H(qprime, 3, m)
 
 """
 Temperature relaxation
@@ -97,7 +87,6 @@ TR23(m::QG3Model{T}, ψ::AbstractArray{T,3}) where T<:Number = m.TRcoeffs[2,:,:]
 Horizontal diffusion, q' is anomolous pv (without coriolis) 2D Fields
 """
 H(qprime::AbstractArray{T,3}, i::Int, m::QG3Model{T}) where T<: Number = m.p.cH .* (m.∇8 .* qprime[i,:,:])
-
 
 u(ψ, m) = -m.p.a^(-1) .* SHtoGrid_dϕ(ψ, m)
 v(ψ, m) = m.acosϕi .* SHtoGrid_dλ(ψ, m)
