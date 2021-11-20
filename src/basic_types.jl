@@ -167,11 +167,11 @@ function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
 
         if cuda_used[]
 
-            mm = reorder_SH_gpu(mm)
-            mm_3d = reorder_SH_gpu(mm_3d)
+            mm = reorder_SH_gpu(mm, p)
+            mm_3d = reorder_SH_gpu(mm_3d, p)
             swap_m_sign_array = [1:Int((p.N_lons)/2);Int((p.N_lons)/2)+1 : p.N_lons]
 
-            P, Pw, dPμdμ, dPcosθdθ = reorder_SH_gpu(P), reorder_SH_gpu(Pw), reorder_SH_gpu(dPμdμ), reorder_SH_gpu(dPcosθdθ)
+            P, Pw, dPμdμ, dPcosθdθ = reorder_SH_gpu(P, p), reorder_SH_gpu(Pw, p), reorder_SH_gpu(dPμdμ, p), reorder_SH_gpu(dPcosθdθ, p)
 
             FT = CUDA.CUFFT.plan_rfft(A_real[1,:,:], 2)
             iFT = CUDA.CUFFT.plan_irfft((FT*A_real[1,:,:]), p.N_lons, 2)

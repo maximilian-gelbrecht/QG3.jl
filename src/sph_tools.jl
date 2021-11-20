@@ -3,10 +3,6 @@
 # a) A self implemented Gaussian Grid based version
 # b) Fast Transforms.jl for regular grids
 #
-#
-
-
-
 
 # shared functions
 
@@ -67,7 +63,7 @@ function reorder_SH_gpu(A::AbstractArray{T,2}, p::QG3ModelParameters{T}) where T
     reindex = [1:2:p.N_lons; 2:2:p.N_lons]
     out = zeros(T, p.N_lats, p.N_lons)
     out[1:p.L, 1:p.M] = A
-    return togpu(A[:,reindex])
+    return togpu(out[:,reindex])
 end
 
 function reorder_SH_gpu(A::AbstractArray{T,3}, p::QG3ModelParameters{T}) where T<:Number
@@ -75,7 +71,7 @@ function reorder_SH_gpu(A::AbstractArray{T,3}, p::QG3ModelParameters{T}) where T
 
     out = zeros(T, size(A, 1), p.N_lats, p.N_lons)
     out[:, 1:p.L, 1:p.M] = A
-    return togpu(A[:,:,reindex])
+    return togpu(out[:,:,reindex])
 end
 
 function get_uppertriangle_sum(A)
