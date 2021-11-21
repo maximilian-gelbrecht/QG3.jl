@@ -1,9 +1,9 @@
 using CUDA
 using Test
 
+@testset "Basic GPU capability" begin
 
 if CUDA.functional()
-    @testset "Basic GPU capability" begin
 
     using QG3, BenchmarkTools, DifferentialEquations, JLD2
 
@@ -42,7 +42,9 @@ if CUDA.functional()
     sol = @time solve(prob, AB5(), dt=DT)
 
     @test sol.retcode==:Success
-    end
+
 else
     println("No CUDA available, test skipped")
+end
+
 end
