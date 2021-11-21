@@ -190,7 +190,7 @@ function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
 
             mm = reorder_SH_gpu(mm, p)
             mm_3d = reorder_SH_gpu(mm_3d, p)
-            swap_m_sign_array = [1:Int((p.N_lons)/2)+1;Int((p.N_lons)/2)+2 : p.N_lons + 2]
+            swap_m_sign_array = [1; Int((p.N_lons)/2)+3 : p.N_lons + 2; 1:Int((p.N_lons)/2)+1;]
 
             P, Pw, dPμdμ, dPcosθdθ = reorder_SH_gpu(P, p), reorder_SH_gpu(Pw, p), reorder_SH_gpu(dPμdμ, p), reorder_SH_gpu(dPcosθdθ, p)
 

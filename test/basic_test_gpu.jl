@@ -18,7 +18,18 @@ if CUDA.functional()
 
     qg3p_gpu = QG3Model(qg3ppars_gpu)
 
-    @test mean(abs.(transform_grid(ψ_0_gpu, qg3p_gpu) - transform_grid(ψ_0, qg3p))) < 1e-10
+    @test mean(abs.(transform_grid(ψ_0_gpu, qg3p_gpu) - togpu(transform_grid(ψ_0, qg3p)))) < 1e-10
+
+    mean(abs.(QG3.SHtoGrid_dμ(ψ_0_gpu, qg3p_gpu) - togpu(QG3.SHtoGrid_dμ(ψ_0, qg3p_cpu)))) < 1e-10
+
+    mean(abs.(QG3.SHtoGrid_dϕ(ψ_0_gpu, qg3p_gpu) - togpu(QG3.SHtoGrid_dϕ(ψ_0, qg3p_cpu)))) < 1e-10
+
+    mean(abs.(QG3.SHtoGrid_dλ(ψ_0_gpu, qg3p_gpu) - togpu(QG3.SHtoGrid_dλ(ψ_0, qg3p_cpu)))) < 1e-10
+
+    J(ψ_0_gpu, q_0_gpu, qg3p_gpu) - QG3.reorder_SH_gpu(J(ψ_0, q_0, qg3p_cpu))
+
+    D(ψ_0_gpu, q_0_gpu, qg3p_gpu) - QG3.reorder_SH_gpu(D(ψ_0, q_0, qg3p_cpu))
+
 
     A = QG3.QG3MM_gpu(q_0_gpu, [qg3p_gpu, S_gpu], 0.)
 
@@ -34,6 +45,7 @@ if CUDA.functional()
     sol = @time solve(prob, AB5(), dt=DT)
 
     @test sol.retcode==:Success
+    end
 else
     println("No CUDA available, test skipped")
 end
