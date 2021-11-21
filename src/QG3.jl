@@ -11,14 +11,24 @@ global const cuda_used = Ref(false)
 function __init__() # automatically called at runtime to set cuda_used
     cuda_used[] = CUDA.functional()
 end
+
+"""
+    gpuon()
+
+Manually toggle GPU use on (if available)
+"""
 function gpuon() # manually toggle GPU use on and off
     cuda_used[] = CUDA.functional()
 end
+
+"""
+    gpuon()
+
+Manually toggle GPU use off
+"""
 function gpuoff()
     cuda_used[] = false
 end
-
-
 
 
 using CUDA.CUFFT, CUDAKernels, KernelAbstractions

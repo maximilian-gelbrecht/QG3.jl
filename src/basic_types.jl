@@ -317,4 +317,4 @@ end
 
 Determines if the model was pre-computed on GPU.
 """
-isongpu(m::QG3Model{T}) = typeof(m.g) <: AbstractGridType{T, true}
+isongpu(m::QG3Model{T}) where T<:Number = typeof(m.g) <: AbstractGridType{T, true}
