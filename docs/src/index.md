@@ -43,7 +43,7 @@ end
 
 ### CPU Version
 
-The CPU version works on 2d fields (lat, lon) / (il, m), on CPUs this is currently a little faster than using the GPU/3D version. In other words: the GPU version could probably still be optimized further. The problem definition follows as
+The CPU version works on 2d fields (lat, lon) / (il, m), on CPUs this is currently a little faster than using the GPU/3D version on CPU. In other words: the GPU version could probably still be optimized further. The problem definition follows as
 
 ```julia
 function QG3MM_base(q, m, t)

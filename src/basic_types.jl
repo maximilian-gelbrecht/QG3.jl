@@ -290,7 +290,7 @@ function QG3Model(p::QG3ModelParameters)
 
     g = grid(p)
 
-    Δ = togpu(compute_Δ(p))
+    Δ = cuda_used[] ? reorder_SH_gpu(compute_Δ(p), p) : compute_Δ(p)
 
     Tqψ, Tψq = compute_batched_ψq_transform_matrices(p, Δ)
     Tqψ, Tψq = togpu(Tqψ), togpu(Tψq)
@@ -301,7 +301,7 @@ function QG3Model(p::QG3ModelParameters)
     TR_matrix = togpu(compute_batched_TR_matrix(p))
     f_J3 = togpu(compute_f_J3(p, f))
 
-    ∇8 = togpu(compute_∇8(p))
+    ∇8 = cuda_used[] ? reorder_SH_gpu(compute_∇8(p), p) : compute_∇8(p)
 
     k_SH = transform_SH(k, p, g)
 
