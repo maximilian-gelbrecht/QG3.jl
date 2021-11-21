@@ -20,13 +20,13 @@ if CUDA.functional()
 
     @test mean(abs.(transform_grid(ψ_0_gpu, qg3p_gpu) - togpu(transform_grid(ψ_0, qg3p)))) < 1e-10
 
-    mean(abs.(QG3.SHtoGrid_dμ(ψ_0_gpu, qg3p_gpu) - togpu(QG3.SHtoGrid_dμ(ψ_0, qg3p_cpu)))) < 1e-10
+    @test mean(abs.(QG3.SHtoGrid_dμ(ψ_0_gpu, qg3p_gpu) - togpu(QG3.SHtoGrid_dμ(ψ_0, qg3p_cpu)))) < 1e-10
 
-    mean(abs.(QG3.SHtoGrid_dϕ(ψ_0_gpu, qg3p_gpu) - togpu(QG3.SHtoGrid_dϕ(ψ_0, qg3p_cpu)))) < 1e-10
+    @test mean(abs.(QG3.SHtoGrid_dϕ(ψ_0_gpu, qg3p_gpu) - togpu(QG3.SHtoGrid_dϕ(ψ_0, qg3p_cpu)))) < 1e-10
 
-    mean(abs.(QG3.SHtoGrid_dλ(ψ_0_gpu, qg3p_gpu) - togpu(QG3.SHtoGrid_dλ(ψ_0, qg3p_cpu)))) < 1e-10
+    @test mean(abs.(QG3.SHtoGrid_dλ(ψ_0_gpu, qg3p_gpu) - togpu(QG3.SHtoGrid_dλ(ψ_0, qg3p_cpu)))) < 1e-10
 
-    mean(abs.(transform_grid(J(ψ_0_gpu, q_0_gpu, qg3p_gpu),qg3p_gpu) - togpu(transform_grid(J(ψ_0, q_0, qg3p_cpu),qg3p_cpu)))) < 1e-10
+    @test mean(abs.(transform_grid(J(ψ_0_gpu, q_0_gpu, qg3p_gpu),qg3p_gpu) - togpu(transform_grid(J(ψ_0, q_0, qg3p_cpu),qg3p_cpu)))) < 1e-10
 
     A = QG3.QG3MM_gpu(q_0_gpu, [qg3p_gpu, S_gpu], 0.)
 
