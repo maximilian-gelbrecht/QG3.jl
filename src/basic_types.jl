@@ -311,3 +311,10 @@ function QG3Model(p::QG3ModelParameters)
 
     return QG3Model(p, g, k, TRcoeffs, TR_matrix, cosϕ, acosϕi, Δ, Tψq, Tqψ, f, f_J3, ∇8, make3d(∇8), ∂k∂ϕ, ∂k∂μ, ∂k∂λ)
 end
+
+"""
+    isongpu(m::QG3Model{T})
+
+Determines if the model was pre-computed on GPU.
+"""
+isongpu(m::QG3Model{T}) = typeof(m.g) <: AbstractGridType{T, true}

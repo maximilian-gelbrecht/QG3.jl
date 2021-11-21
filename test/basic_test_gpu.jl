@@ -27,18 +27,13 @@ if CUDA.functional()
     mean(abs.(A - B)) < 1e-10
     # time step
     DT = 2π/144
-    t_end = 500.
+    t_end = 200.
 
-    # problem definition with standard model from the library and solve
+    # problem definition with GPU model from the library
     prob = ODEProblem(QG3.QG3MM_gpu, q_0, (0.,t_end), [qg3p, S])
     sol = @time solve(prob, AB5(), dt=DT)
 
-    if sol.retcode==:Success
-            return true
-    else
-            return false;
-    end
-
+    @test sol.retcode==:Success
 else
     println("No CUDA available, test skipped")
 end
