@@ -28,6 +28,8 @@ SHtoGrid_dφ(ψ, m::QG3Model{T}) where T<:Number = transform_grid(SHtoSH_dφ(ψ,
 
 SHtoGrid_dφ(ψ::AbstractArray{T,3}, i::Integer, m::QG3Model{T}) where T<:Number = transform_grid(SHtoSH_dφ(ψ, i, m), m)
 SHtoGrid_dλ(ψ, m) = SHtoGrid_dφ(ψ, m)
+SHtoGrid_dλ(ψ, i, m) = SHtoGrid_dφ(ψ, i, m)
+
 
 """
 derivative of input after φ (polar angle/longtitude) in SH, output in SH
