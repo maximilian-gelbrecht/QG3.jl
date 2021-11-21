@@ -70,7 +70,7 @@ Ekman dissipation
 
  m.∂k∂λ  includes 1/cos^2ϕ
 """
-EK(ψ::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = transform_SH(SHtoGrid_dϕ(view(ψ,3,:,:), m) .* m.∂k∂ϕ + SHtoGrid_dλ(view(ψ,3,:,:), m) .* m.∂k∂λ + m.k .* transform_grid(m.Δ .* view(ψ,3,:,:), m), m)
+EK(ψ::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = transform_SH(SHtoGrid_dϕ(view(ψ,3,:,:), m) .* m.∂k∂ϕ + SHtoGrid_dλ(ψ,3,m) .* m.∂k∂λ + m.k .* transform_grid(m.Δ .* view(ψ,3,:,:), m), m)
 
 D1(ψ::AbstractArray{T,3}, qprime::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = -TR12(m, ψ) + H(qprime, 1, m)
 D2(ψ::AbstractArray{T,3}, qprime::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = TR12(m, ψ) - TR23(m, ψ) + H(qprime, 2, m)

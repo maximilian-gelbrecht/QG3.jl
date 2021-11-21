@@ -49,11 +49,12 @@ these are  variants with AbstractArray{T,3} and index i to select which layer is
 
 there is currently a bug or at least missing feature in Zygote, the AD library, that stops views from always working flawlessly when a view is mixed with prior indexing of an array. We need a view for the derivative after φ to change the sign of m, so here is a differentiable variant of the SHtoSH_dφ function
 """
-SHtoSH_dφ(ψ::AbstractArray{T,3}, i::Integer, m::QG3Model{T}) where T<:Number = _SHtoSH_dφ(ψ, i, m.g.mm)
+SHtoSH_dφ(ψ::AbstractArray{T,3}, i::Integer, m::QG3Model{T}) where T<:Number = _SHtoSH_dφ(ψ, i, m.g.mm, m.g.swap_m_sign_array)
 
-_SHtoSH_dφ(ψ::AbstractArray{T,3}, i::Integer, mm::AbstractArray{T,2}) where T<:Number = mm .* change_msign(ψ, i)
+_SHtoSH_dφ(ψ::AbstractArray{T,3}, i::Integer, mm::AbstractArray{T,2}, swap_array::AbstractArray{Int,1}) where T<:Number = mm .* change_msign(ψ, i, swap_array)
 
 SHtoSH_dλ(ψ, m) = SHtoSH_dφ(ψ, m)
+SHtoSH_dλ(ψ, i, m) = SHtoSH_dφ(ψ, i, m)
 
 
 """

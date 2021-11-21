@@ -109,18 +109,12 @@ Change the sign of the m in SH (FastTranforms.jl convention of storing them). Th
 
 there is currently a bug or at least missing feature in Zygote, the AD library, that stops views from always working flawlessly when a view is mixed with prior indexing of an array. We need a view for the derivative after φ to change the sign of m, so here is a differentiable variant of the SHtoSH_dφ function for the 2d field
 """
-change_msign(A::AbstractArray{T,2}, swap_array) where T<:Number = view(A,:,swap_array)
-
-function change_msign(A::AbstractArray{T,3}, i::Int) where T<:Number
-    arr = [1;vcat([[2*i+1,2*i] for i=1:size(A,2)-1]...)]
-    _change_msign(A, i, arr)
-end
-
-_change_msign(A::AbstractArray{T,3}, i, arr) where T<:Number = @inbounds view(A,i,:,arr)
+change_msign(A::AbstractArray{T,2}, swap_array) where T<:Number = @inbounds view(A,:,swap_array)
 
 # 3d field version
 change_msign(A::AbstractArray{T,3}, swap_array) where T<:Number = @inbounds view(A,:,:,swap_array)
 
+change_msign(A::AbstractArray{T,3}, i::Integer, swap_array) where T<:Number = @inbounds view(A,i,:,swap_array)
 
 
 """
