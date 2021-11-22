@@ -1,6 +1,9 @@
 using QG3
 using Test
 
-@testset "QG3.jl" begin
-    @test include("basic_test.jl")
-end
+println("testing basic functionality")
+include("basic_deriv_and_transform_test.jl")
+include("basic_test.jl")
+include("basic_test_3d.jl")
+include("ad_test.jl")
+include("basic_test_gpu.jl")

@@ -1,3 +1,4 @@
+# pre-computations are only meant to be performed on CPU, not GPU
 
 """
 Pre-compute drag coefficient k in real grid space, double check with values from paper
@@ -60,21 +61,105 @@ function compute_batched_ψq_transform_matrices(p::QG3ModelParameters{T}, Δ) wh
     Tqψ, Tψq = compute_ψq_transform_matrices(p, Δ)
     return compute_batched_ψq_transform_matrices(p, Tqψ, Tψq)
 end
+
 function compute_batched_ψq_transform_matrices(p::QG3ModelParameters{T}, Tqψ, Tψq) where T<:Number
 
-    bTψq = zeros(T,3,3,p.L,p.M)
-    bTqψ = zeros(T,3,3,p.L,p.M)
+    if cuda_used[]
+        bTψq = zeros(T,3,3,p.N_lats,p.N_lons+2)
+        bTqψ = zeros(T,3,3,p.N_lats,p.N_lons+2)
 
-    for m ∈ -(p.L-1):(p.L-1)
-        for il ∈ 1:(p.L - abs(m))
-            l = il + abs(m) - 1
-            im = m<0 ? 2*abs(m) : 2*m+1
-            bTψq[:,:,il,im] = Tψq[l+1,:,:]
-            bTqψ[:,:,il,im] = Tqψ[l+1,:,:]
+        for m ∈ -(p.L-1):(p.L-1)
+            for il ∈ 1:(p.L - abs(m))
+                l = il + abs(m) - 1
+                im = m < 0 ? abs(m) + Int(p.N_lons/2) + 2 : m + 1
+                bTψq[:,:,il,im] = Tψq[l+1,:,:]
+                bTqψ[:,:,il,im] = Tqψ[l+1,:,:]
+            end
         end
+
+        return togpu(reshape(bTqψ,3,3,:)), togpu(reshape(bTψq,3,3,:))
+    else
+        bTψq = zeros(T,3,3,p.L,p.M)
+        bTqψ = zeros(T,3,3,p.L,p.M)
+
+        for m ∈ -(p.L-1):(p.L-1)
+            for il ∈ 1:(p.L - abs(m))
+                l = il + abs(m) - 1
+                im = m<0 ? 2*abs(m) : 2*m+1
+                bTψq[:,:,il,im] = Tψq[l+1,:,:]
+                bTqψ[:,:,il,im] = Tqψ[l+1,:,:]
+            end
+        end
+        return reshape(bTqψ,3,3,:), reshape(bTψq,3,3,:)
     end
-    return reshape(bTqψ,3,3,:), reshape(bTψq,3,3,:)
 end
+
+
+"""
+Pre-compute matrices involved in the temperature relaxation in matrix form (for GPU / 3d fields)
+
+TR = TR_Matrix * ψ  ∀ l ∈ [0,l_max]
+
+# For l=0 the matrix is set to be zero
+
+"""
+function compute_TR_matrix(p::QG3ModelParameters{T}) where T<:Number
+
+    TR_matrix = zeros(T, p.L, 3,3)
+
+    for l ∈ 2:p.L # this is actually l=(l+1) in terms of SH numbers due to 1-indexing
+        TR_matrix[l,1,1] = - p.R1i * p.τRi
+        TR_matrix[l,1,2] = p.R1i * p.τRi
+
+        TR_matrix[l,2,1] = p.R1i * p.τRi
+        TR_matrix[l,2,2] = (- p.R1i - p.R2i) * p.τRi
+        TR_matrix[l,2,3] = p.R2i * p.τRi
+
+        TR_matrix[l,3,2] = p.R2i * p.τRi
+        TR_matrix[l,3,3] = - p.R2i * p.τRi
+    end
+
+    return TR_matrix
+end
+
+"""
+    compute_batched_TR_matrix
+
+prepares the TR = TR_Matrix * ψ  ∀ l ∈ [0,l_max] matrix for batched multiply
+"""
+function compute_batched_TR_matrix(p::QG3ModelParameters{T}) where T<:Number
+    TR_matrix = compute_TR_matrix(p)
+    return compute_batched_TR_matrix(p, TR_matrix)
+end
+
+function compute_batched_TR_matrix(p::QG3ModelParameters{T}, TR::AbstractArray{T,3}) where T<:Number
+
+    if cuda_used[]
+        bTR = zeros(T,3,3,p.N_lats,p.N_lons+2)
+
+        for m ∈ -(p.L-1):(p.L-1)
+            for il ∈ 1:(p.L - abs(m))
+                l = il + abs(m) - 1
+                im = m < 0 ? abs(m) + Int(p.N_lons/2) + 2 : m + 1
+                bTR[:,:,il,im] = TR[l+1,:,:]
+            end
+        end
+
+        return togpu(reshape(bTR,3,3,:))
+    else
+        bTR = zeros(T,3,3,p.L,p.M)
+
+        for m ∈ -(p.L-1):(p.L-1)
+            for il ∈ 1:(p.L - abs(m))
+                l = il + abs(m) - 1
+                im = m<0 ? 2*abs(m) : 2*m+1
+                bTR[:,:,il,im] = TR[l+1,:,:]
+            end
+        end
+        return reshape(bTR,3,3,:)
+    end
+end
+
 
 """
 Pre-compute a matrix with with the Coriolis factor
@@ -97,23 +182,16 @@ function compute_coriolis_vector_grid(p::QG3ModelParameters{T}) where T<:Number
 end
 
 """
-Pre-compute a matrix with (m) values of the SH matrix format of FastTransforms.jl, used for zonal derivative
+Pre-compute the additional contribution of the Coriolis force to the 850hPa Jacobian component in GPU ready format, for the Jacobian at 850hPa, q = q' + f(1+h/H_0) = q' + f + f*h/H_0, so that the thrid term has to be added.
 """
-function compute_mmMatrix(L::Integer, M::Integer) where T<:Number
-    mmMat = zeros(L,M)
-    for m ∈ -(L-1):(L-1)
-        for il ∈ 1:(L - abs(m))
-            if m<0
-                mmMat[il, 2*abs(m)] = m
-            else
-                mmMat[il, 2*m+1] = m
-            end
-        end
-    end
-    mmMat
+function compute_f_J3(p::QG3ModelParameters{T}, f::AbstractArray{T,3}) where T<:Number
+
+    f_J3 = zeros(T, 3, size(f,2), size(f,3))
+    f_J3[3,:,:] = f[3,:,:] - f[2,:,:]
+
+    return f_J3
 end
-compute_mmMatrix(p::QG3ModelParameters{T}) where T<:Number = T.(compute_mmMatrix(p.L,p.M))
-compute_mmMatrix(p::QG3Model) = compute_mmMatrix(p.p)
+compute_f_J3(p::QG3ModelParameters) = compute_f_J3(p, compute_coriolis_vector_SH(p))
 
 """
 Pre-compute the Laplacian in Spherical Harmonics, follows the matrix convention of FastTransforms.jl
@@ -122,27 +200,6 @@ function compute_Δ(p::QG3ModelParameters{T}) where T<:Number
     l = lMatrix(p)
     return -l .* (l .+ 1) ./ (p.a^2)
 end
-
-
-"""
-Return l-Matrix of SH coefficients in convention of FastTransforms.jl
-"""
-function lMatrix(L, M)
-    l = zeros(Int, L, M)
-
-    for m ∈ -(L-1):(L-1)
-        im = m<0 ? 2*abs(m) : 2*m+1
-        l[1:L-abs(m),im] = abs(m):(L-1)
-    end
-    return l
-end
-lMatrix(p::QG3ModelParameters) = lMatrix(p.L, p.M)
-lMatrix(p::QG3Model) = lMatrix(p.p)
-
-
-
-
-
 
 """"
 Pre-compute the 8-th derivative in Spherical Harmonics
@@ -160,13 +217,14 @@ Pre-compute array of temperature relaxation coefficients.
 function compute_TR(p::QG3ModelParameters{T}) where T<:Number
     TRcoeffs = zeros(T, 2, p.L, p.M)
 
-    TRcoeffs[1,2:end,2:end] .= p.τRi * p.R1i
-    TRcoeffs[2,2:end,2:end] .= p.τRi * p.R2i
+    TRcoeffs[1,:,:] .= p.τRi * p.R1i
+    TRcoeffs[2,:,:] .= p.τRi * p.R2i
+
+    TRcoeffs[1,1,1] = T(0)
+    TRcoeffs[2,1,1] = T(0)
 
     return TRcoeffs
 end
-
-
 
 """
 Pre-compute cos(ϕ) (latitude) matrix

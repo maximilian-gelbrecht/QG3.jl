@@ -1,6 +1,6 @@
 # QG3
 
-This code provides a Julia implementation of the Marshall, Molteni QG3 Model. It runs on GPUs and is differentiable (tested only with Zygote).
+This module provides a Julia implementation of the Marshall, Molteni QG3 Model. It runs on GPUs and is differentiable (tested only with Zygote).
 
 The model is solved with a pseudo-spectral approach. Currently there is a naive implementation of Real Spherical Harmonics with transforms defined for a Gaussian Grid. There are bindings to FastTransforms.jl for a regular grid as well, however this is experimental and suffers from aliasing problems when integrating the equation.
 
@@ -23,3 +23,5 @@ Its governing equation for the quasigeostrophic vorticity $`q_i`$ in three equip
 \vec{q} = T_{\psi q} \vec{\psi}
 ```
 where the voriticy $`q`$ and streamfunction $`\psi`$ are related by a linear operator (comprising the Laplacian and temperature relaxation), $`J`$ is the Jacobian / advection term, $`D`$ the dissipation and $`S`$ a forcing computed from data.
+
+Currently there are two different implementations, one that is optimised for CPU (the "2D version") and one that is optimised for GPU (the "3D version"). The GPU version can also run on CPU but not the other way around. Further explainations in the documentation.
