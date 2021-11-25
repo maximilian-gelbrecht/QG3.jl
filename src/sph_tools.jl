@@ -477,7 +477,7 @@ transform_grid(data::AbstractArray{T,3}, m::QG3Model{T}; kwargs...) where T<:Num
 transform_grid(data::AbstractArray{T,4}, m::QG3Model{T}; kwargs...) where T<:Number = transform_grid(data, m.p, m.g; kwargs...)
 
 function transform_grid(data::AbstractArray{T,4}, p::QG3ModelParameters{T}, g::AbstractGridType{T, true}; kwargs...) where T<:Number
-    data_sh = CUDA.zeros(T,3, p.N_lats, p.N_lon, size(data,4))
+    data_sh = CUDA.zeros(T,3, p.N_lats, p.N_lons, size(data,4))
     for it ∈ 1:size(data,4)
         data_sh[:,:,:,it] = transform_grid(data[:,:,:,it], p, g; varname=varname)
     end
@@ -485,7 +485,7 @@ function transform_grid(data::AbstractArray{T,4}, p::QG3ModelParameters{T}, g::A
 end
 
 function transform_grid(data::AbstractArray{T,4}, p::QG3ModelParameters{T}, g::AbstractGridType{T, false}; kwargs...) where T<:Number
-    data_sh = zeros(T,3, p.N_lats, p.N_lon, size(data,4))
+    data_sh = zeros(T,3, p.N_lats, p.N_lons, size(data,4))
     for it ∈ 1:size(data,4)
         data_sh[:,:,:,it] = transform_grid(data[:,:,:,it], p, g; varname=varname)
     end
