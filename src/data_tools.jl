@@ -49,6 +49,17 @@ function plot_ticks(p::QG3ModelParameters, name, N_interval,digits=2)
     (tickrange, tickvals)
 end
 
+# version just for post processing of solutions in 4D (not suitable for the model
+function qprimetoψ(p::QG3Model{T}, q::AbstractArray{T,4}) where T<:Number
+
+    out = similar(q)
+
+    for it ∈ 1:size(out,4)
+        out[:,:,:,it] = qprimetoψ(p, q[:,:,:,it])
+    end
+
+    return out
+end
 
 """
     load_precomputed_data()
