@@ -10,7 +10,7 @@ Saves all the parameters of the model
     * `N_lats::Int`
     * `N_lons::Int`
     * `lats::AbstractArray{T,1}`
-    * `colats::AbstractArray{T,1}` colatitudes = θ
+    * `θ::AbstractArray{T,1}` colatitudes = θ
     * `μ::AbstractArray{T,1}` sin(lats) == cos(colats)
     * `LS::AbstractArray{T,2}` Land see mask, on the same grid as lats and lons
     * `h::AbstractArray{T,2}`` orography, array on the same grid as lats and lons
@@ -47,7 +47,7 @@ struct QG3ModelParameters{T}
     N_lons::Int
 
     lats::AbstractArray{T,1}
-    colats::AbstractArray{T,1}
+    θ::AbstractArray{T,1}
     μ::AbstractArray{T,1}
 
     lons::AbstractArray{T,1}
@@ -94,9 +94,9 @@ function QG3ModelParameters(L::Int, lats::AbstractArray{T,1}, lons::AbstractArra
     return QG3ModelParameters(L, M, N_lats, N_lons, lats, colats, μ, lons, LS, h, R1i, R2i, H0, τRi, τEi, cH, α1, α2, a, Ω, gridtype, time_unit, distance_unit, ψ_unit, q_unit)
 end
 
-togpu(p::QG3ModelParameters) = QG3ModelParameters(p.L, p.M, p.N_lats, p.N_lons, togpu(p.lats), togpu(p.colats), togpu(p.μ), togpu(p.lons), togpu(p.LS), togpu(p.h), p.R1i, p.R2i, p.H0, p.τRi, p.τEi, p.cH, p.α1, p.α2, p.a, p.Ω, p.gridtype, p.time_unit, p.distance_unit, p.ψ_unit, p.q_unit)
+togpu(p::QG3ModelParameters) = QG3ModelParameters(p.L, p.M, p.N_lats, p.N_lons, togpu(p.lats), togpu(p.θ), togpu(p.μ), togpu(p.lons), togpu(p.LS), togpu(p.h), p.R1i, p.R2i, p.H0, p.τRi, p.τEi, p.cH, p.α1, p.α2, p.a, p.Ω, p.gridtype, p.time_unit, p.distance_unit, p.ψ_unit, p.q_unit)
 
-tocpu(p::QG3ModelParameters) = QG3ModelParameters(p.L, p.M, p.N_lats, p.N_lons, tocpu(p.lats), tocpu(p.colats), tocpu(p.μ), tocpu(p.lons), tocpu(p.LS), tocpu(p.h), p.R1i, p.R2i, p.H0, p.τRi, p.τEi, p.cH, p.α1, p.α2, p.a, p.Ω, p.gridtype, p.time_unit, p.distance_unit, p.ψ_unit, p.q_unit)
+tocpu(p::QG3ModelParameters) = QG3ModelParameters(p.L, p.M, p.N_lats, p.N_lons, tocpu(p.lats), tocpu(p.θ), tocpu(p.μ), tocpu(p.lons), tocpu(p.LS), tocpu(p.h), p.R1i, p.R2i, p.H0, p.τRi, p.τEi, p.cH, p.α1, p.α2, p.a, p.Ω, p.gridtype, p.time_unit, p.distance_unit, p.ψ_unit, p.q_unit)
 
 """
     AbstractGridType{T, onGPU}
@@ -113,7 +113,7 @@ struct RegularGrid{T, onGPU} <: AbstractGridType{T, onGPU}
     P_spurious_modes # mask, used to zero spurious SH modes
     CS::AbstractArray{T,2}
     dPμdμ::AbstractArray{T,3}
-    dPcosθdθ::AbstractArray{T,3}
+    msinθ::AbstractArray{T,2}
     set_spurious_zero::Bool # set spurious modes zero
     mm::AbstractArray{T,2} # (-m) SH number matrix, used for zonal derivative
     mm_3d::AbstractArray{T,3} # (-m) SH number matrix, used for zonal derivative for 3d fields
@@ -135,7 +135,7 @@ Struct for Gaussian grid and its transforms.
 * `iFT_3d` inverse Fourier transform plan for fully matrix version with lvl as first dimension
 * `truncate_array` truncatation indices
 * `dPμdμ::AbstractArray{T,3}` derivative of ass. Legendre Polynomials
-* `dPcosθdθ::AbstractArray{T,3}` derivative of ass. Legendre Polynomials
+* `msinθ::AbstractArray{T,2}` -sin(θ) for dervative with repsect to θ and ϕ
 * `mm::AbstractArray{T,2}` (-m) SH number matrix, used for zonal derivative
 * `mm_3d::AbstractArray{T,3}` (-m) SH number matrix, used for zonal derivative for 3d fields
 * `swap_m_sign_array` indexing array, used to swap the sign of the m SH number, used for zonal derivative
@@ -150,7 +150,8 @@ struct GaussianGrid{T, onGPU} <: AbstractGridType{T, onGPU}
     iFT_3d
     truncate_array
     dPμdμ::AbstractArray{T,3}
-    dPcosθdθ::AbstractArray{T,3}
+    msinθ::AbstractArray{T,2}
+    msinθ_3d::AbstractArray{T,3}
     mm::AbstractArray{T,2}
     mm_3d::AbstractArray{T,3}
     swap_m_sign_array
@@ -163,12 +164,18 @@ Convience constructor for the [`AbstractGridType`](@ref) based on the parameters
 """
 function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
 
-    dPμdμ, dPcosθdθ, P = compute_P(p)
+    dPμdμ, __, P = compute_P(p)
     A_real = togpu(rand(T,3, p.N_lats, p.N_lons))
 
     mm = compute_mmMatrix(p)
     mm_3d = make3d(mm)
     swap_m_sign_array = [1;vcat([[2*i+1,2*i] for i=1:p.L-1]...)]
+
+    msinθ = togpu(zeros(T, p.N_lats, p.N_lons))
+    for i ∈ 1:p.N_lats
+        msinθ[i,:] .= -sin(p.θ[i])
+    end
+    msinθ_3d = make3d(msinθ)
 
     if gridtype=="regular"
         SH = plan_sph2fourier(T, p.N_lats)
@@ -179,7 +186,7 @@ function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
         P_spurious_modes = togpu(prepare_sph_zero_spurious_modes(p))
         setzero
 
-        return RegularGrid(SH, FT, FTinv, ∂_iFT, P_spurious_modes, CS, dPμdμ, dPcosθdθ, true, mm, mm_3d, swap_m_sign_array)
+        return RegularGrid(SH, FT, FTinv, ∂_iFT, P_spurious_modes, CS, dPμdμ, msinθ, msinθ_3d, true, mm, mm_3d, swap_m_sign_array)
 
     elseif gridtype=="gaussian"
 
@@ -218,7 +225,7 @@ function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
             end
         end
 
-        return GaussianGrid{T, cuda_used[]}(togpu(P), togpu(Pw), FT, iFT, FT_3d, iFT_3d, truncate_array, togpu(dPμdμ), togpu(dPcosθdθ), togpu(mm), togpu(mm_3d), togpu(swap_m_sign_array))
+        return GaussianGrid{T, cuda_used[]}(togpu(P), togpu(Pw), FT, iFT, FT_3d, iFT_3d, truncate_array, togpu(dPμdμ), togpu(msinθ), togpu(msinθ_3d), togpu(mm), togpu(mm_3d), togpu(swap_m_sign_array))
     else
         error("Unknown gridtype.")
     end

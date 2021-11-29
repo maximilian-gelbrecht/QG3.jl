@@ -64,9 +64,11 @@ derivative of input after θ (azimutal angle/colatitude) in SH, uses pre compute
 """
 SHtoGrid_dθ(ψ, m::QG3Model{T}) where T<:Number = SHtoGrid_dθ(ψ, m.p, m.g)
 
-SHtoGrid_dθ(ψ, p::QG3ModelParameters{T}, g::GaussianGrid{T}) where T<:Number = _SHtoGrid_dμθ(ψ, g.dPcosθdθ, p, g)
+SHtoGrid_dθ(ψ::AbstractArray{T,2}, p::QG3ModelParameters{T}, g::Union{GaussianGrid{T},RegularGrid{T}}) where T<:Number = g.msinθ .* SHtoGrid_dμ(ψ, p, g)
 
-SHtoGrid_dθ(ψ, p::QG3ModelParameters{T}, g::RegularGrid{T}) where T<:Number = _SHtoGrid_dμθ(ψ, g.dPcosθdθ, p, g)
+SHtoGrid_dθ(ψ::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::Union{GaussianGrid{T},RegularGrid{T}}) where T<:Number = g.msinθ_3d .* SHtoGrid_dμ(ψ, p, g)
+
+
 
 """
 derivative of input after μ = sinϕ in SH, uses pre computed SH evaluations

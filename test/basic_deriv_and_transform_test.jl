@@ -11,8 +11,8 @@ qg3p = QG3Model(qg3ppars)
 cosθ = similar(qg3p.cosϕ)
 msinθ = similar(qg3p.cosϕ)
 for i ∈ 1:qg3p.p.N_lats
-    cosθ[i,:] .= cos(qg3p.p.colats[i])
-    msinθ[i,:] .= -sin(qg3p.p.colats[i])
+    cosθ[i,:] .= cos(qg3p.p.θ[i])
+    msinθ[i,:] .= -sin(qg3p.p.θ[i])
 end
 # 2D transforms
 cSH_2d = transform_SH(cosθ, qg3p)

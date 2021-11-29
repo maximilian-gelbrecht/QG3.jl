@@ -27,8 +27,8 @@ function compute_P(L::Integer, M::Integer, μ::AbstractArray{T,1}; sh_norm=GSL_S
     gsl_legendre_index(l,m) = m > l ? error("m > l, not defined") : sf_legendre_array_index(l,m)+1 # +1 because of c indexing vs julia indexing
 
     for ilat ∈ 1:N_lats
-        temp = sf_legendre_deriv_array_e(sh_norm, L - 1, μ[ilat], CSPhase) # cordon sherley factor? -1 or 1?
-        temp_alt = sf_legendre_deriv_alt_array_e(sh_norm, L - 1, μ[ilat], CSPhase) # cordon sherley factor? -1 or 1?
+        temp = sf_legendre_deriv_array_e(sh_norm, L - 1, μ[ilat], CSPhase)
+        temp_alt = sf_legendre_deriv_alt_array_e(sh_norm, L - 1, μ[ilat], CSPhase) 
 
         for m ∈ -(L-1):(L-1)
             for il ∈ 1:(L - abs(m)) # l = abs(m):l_max
