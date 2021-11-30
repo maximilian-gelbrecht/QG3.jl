@@ -237,7 +237,7 @@ abstract type AbstractQG3Model{T} end
 """
     QG3Model{T}
 
-Holds all parameter and grid information, plus additional pre-computed fields that save computation time during model integration. All these parameter are seen as constants and not trainable. Should be computed on CPU and can then be transferred to GPU with `togpu(m::QG3Model)`.
+Holds all parameter and grid information, plus additional pre-computed fields that save computation time during model integration. All these parameter are seen as constants and not trainable. It should be computed on CPU, if you are on GPU use `CUDA.@allowscalar QG3Model(...)`.
 
 # Fields
 
@@ -322,6 +322,6 @@ end
 """
     isongpu(m::QG3Model{T})
 
-Determines if the model was pre-computed on GPU.
+Determines if the model was pre-computed to be used on GPU.
 """
 isongpu(m::QG3Model{T}) where T<:Number = typeof(m.g) <: AbstractGridType{T, true}

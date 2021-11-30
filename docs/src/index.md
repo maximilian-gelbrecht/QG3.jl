@@ -57,3 +57,7 @@ function QG3MM_base(q, m, t)
     dims=1)
 end
 ```
+
+### Transforms
+
+Throughout the model real spherical harmonics are used. The transform is handled either by naive SH transform (FFT + Gauss-Legendre Quadrature) or the FastTransforms.jl library and is pre-computed. The FastTransforms.jl is currently invoking aliasing problems and not working for the full model. SHs are handled in the matrix convention that FastTransforms.jl uses: columns by m-value: 0, -1, 1, -2, 2, ..., rows l in ascending order. This is for the naive SH transform definately not the fasted way of storing the coefficients as an additonal allocating reordering needs to be done for every transform. Therefore the coefficient matrix convention is different on GPU, where the columns are ordered 0, 1, 2, .... l_max, 0, -1, -2, -3, .. . Transforms are called with [`transform_SH`](@ref) and [`transform_grid`](@ref).
