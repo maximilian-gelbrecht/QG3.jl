@@ -119,10 +119,10 @@ Change the sign of the m in SH (FastTranforms.jl convention of storing them). Th
 
 there is currently a bug or at least missing feature in Zygote, the AD library, that stops views from always working flawlessly when a view is mixed with prior indexing of an array. We need a view for the derivative after φ to change the sign of m, so here is a differentiable variant of the SHtoSH_dφ function for the 2d field
 """
-change_msign(A::AbstractArray{T,2}, swap_array::Vector{Int}) where T<:Number = @inbounds view(A,:,swap_array)
+change_msign(A::AbstractArray{T,2}, swap_array::AbstractArray{Int,1}) where T<:Number = @inbounds view(A,:,swap_array)
 
 # 3d field version
-change_msign(A::AbstractArray{T,3}, swap_array::Vector{Int}) where T<:Number = @inbounds view(A,:,:,swap_array)
+change_msign(A::AbstractArray{T,3}, swap_array::AbstractArray{Int,1}) where T<:Number = @inbounds view(A,:,:,swap_array)
 
 #=
 Zygote.@adjoint function change_msign(A::AbstractArray{T,3}, swap_array::Vector{Int}) where T<:Number
@@ -130,7 +130,7 @@ Zygote.@adjoint function change_msign(A::AbstractArray{T,3}, swap_array::Vector{
 end
 =#
 
-change_msign(A::AbstractArray{T,3}, i::Integer, swap_array::Vector{Int}) where T<:Number = @inbounds view(A,i,:,swap_array)
+change_msign(A::AbstractArray{T,3}, i::Integer, swap_array::AbstractArray{Int,1}) where T<:Number = @inbounds view(A,i,:,swap_array)
 
 """
 Return l-Matrix of SH coefficients in convention of FastTransforms.jl
