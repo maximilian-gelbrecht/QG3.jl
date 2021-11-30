@@ -61,25 +61,25 @@ New order columns by m: 0, 1, 2, ... l_max, 0 (nothing), -1, -2, ..
 
 Incase CUDA is not used, it just return the input.
 """
-function reorder_SH_gpu(A::AbstractArray{T,2}, p::QG3ModelParameters{T}) where T<:Number
+function reorder_SH_gpu(A::AbstractArray{S,2}, p::QG3ModelParameters{T}) where {S,T}
     if !(cuda_used[])
         return A
     end
 
     reindex = [1:2:(p.N_lons+2);[(p.N_lons+2)]; 2:2:(p.N_lons+1)] # the middle one is the 0 (nothing)
-    out = zeros(T, p.N_lats, p.N_lons+2)
+    out = zeros(S, p.N_lats, p.N_lons+2)
     out[1:p.L, 1:p.M] = A
     return togpu(out[:,reindex])
 end
 
-function reorder_SH_gpu(A::AbstractArray{T,3}, p::QG3ModelParameters{T}) where T<:Number
+function reorder_SH_gpu(A::AbstractArray{S,3}, p::QG3ModelParameters{T}) where {S,T}
     if !(cuda_used[])
         return A
     end
 
     reindex = [1:2:(p.N_lons+2);[(p.N_lons+2)]; 2:2:(p.N_lons+1)]
 
-    out = zeros(T, size(A, 1), p.N_lats, p.N_lons+2)
+    out = zeros(S, size(A, 1), p.N_lats, p.N_lons+2)
     out[:, 1:p.L, 1:p.M] = A
     return togpu(out[:,:,reindex])
 end
