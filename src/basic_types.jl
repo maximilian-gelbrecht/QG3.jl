@@ -203,9 +203,15 @@ function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
 
             FT = CUDA.CUFFT.plan_rfft(A_real[1,:,:], 2)
             iFT = CUDA.CUFFT.plan_irfft((FT*A_real[1,:,:]), p.N_lons, 2)
+            # also set up the inverse plans for the adjoints, this is not done automatically by CUDA.jl
+            FT.pinv = CUDA.CUFFT.plan_inv(FT)
+            iFT.pinv = CUDA.CUFFT.plan_inv(iFT)
 
             FT_3d = CUDA.CUFFT.plan_rfft(A_real, 3)
             iFT_3d = CUDA.CUFFT.plan_irfft((FT_3d*A_real), p.N_lons, 3)
+
+            FT_3d.pinv = CUDA.CUFFT.plan_inv(FT_3d)
+            iFT_3d.pinv = CUDA.CUFFT.plan_inv(iFT_3d)
 
             truncate_array = nothing
         else
