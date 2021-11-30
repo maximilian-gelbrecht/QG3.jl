@@ -72,9 +72,12 @@ Ekman dissipation
 """
 EK(ψ::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = transform_SH(SHtoGrid_dϕ(view(ψ,3,:,:), m) .* m.∂k∂ϕ + SHtoGrid_dλ(ψ,3,m) .* m.∂k∂λ + m.k .* transform_grid(m.Δ .* view(ψ,3,:,:), m), m)
 
+EK(ψ::AbstractArray{T,2}, m::QG3Model{T}) where T<:Number = transform_SH(SHtoGrid_dϕ(ψ, m) .* m.∂k∂ϕ + SHtoGrid_dλ(ψ,m) .* m.∂k∂λ + m.k .* transform_grid(m.Δ .* ψ, m), m)
+
+
 D1(ψ::AbstractArray{T,3}, qprime::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = -TR12(m, ψ) + H(qprime, 1, m)
 D2(ψ::AbstractArray{T,3}, qprime::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = TR12(m, ψ) - TR23(m, ψ) + H(qprime, 2, m)
-D3(ψ::AbstractArray{T,3}, qprime::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = TR23(m, ψ) + EK(ψ, m) + H(qprime, 3, m)
+D3(ψ::AbstractArray{T,3}, qprime::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = TR23(m, ψ) + EK(ψ[3,:,:], m) + H(qprime, 3, m)
 
 """
 Temperature relaxation

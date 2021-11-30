@@ -28,7 +28,7 @@ function compute_P(L::Integer, M::Integer, μ::AbstractArray{T,1}; sh_norm=GSL_S
 
     for ilat ∈ 1:N_lats
         temp = sf_legendre_deriv_array_e(sh_norm, L - 1, μ[ilat], CSPhase)
-        temp_alt = sf_legendre_deriv_alt_array_e(sh_norm, L - 1, μ[ilat], CSPhase) 
+        temp_alt = sf_legendre_deriv_alt_array_e(sh_norm, L - 1, μ[ilat], CSPhase)
 
         for m ∈ -(L-1):(L-1)
             for il ∈ 1:(L - abs(m)) # l = abs(m):l_max
@@ -119,13 +119,18 @@ Change the sign of the m in SH (FastTranforms.jl convention of storing them). Th
 
 there is currently a bug or at least missing feature in Zygote, the AD library, that stops views from always working flawlessly when a view is mixed with prior indexing of an array. We need a view for the derivative after φ to change the sign of m, so here is a differentiable variant of the SHtoSH_dφ function for the 2d field
 """
-change_msign(A::AbstractArray{T,2}, swap_array) where T<:Number = @inbounds view(A,:,swap_array)
+change_msign(A::AbstractArray{T,2}, swap_array::Vector{Int}) where T<:Number = @inbounds view(A,:,swap_array)
 
 # 3d field version
-change_msign(A::AbstractArray{T,3}, swap_array) where T<:Number = @inbounds view(A,:,:,swap_array)
+change_msign(A::AbstractArray{T,3}, swap_array::Vector{Int}) where T<:Number = @inbounds view(A,:,:,swap_array)
 
-change_msign(A::AbstractArray{T,3}, i::Integer, swap_array) where T<:Number = @inbounds view(A,i,:,swap_array)
+#=
+Zygote.@adjoint function change_msign(A::AbstractArray{T,3}, swap_array::Vector{Int}) where T<:Number
+    return (change_msign(A, swap_array), Δ->(change_msign(Δ,swap_array),))
+end
+=#
 
+change_msign(A::AbstractArray{T,3}, i::Integer, swap_array::Vector{Int}) where T<:Number = @inbounds view(A,i,:,swap_array)
 
 """
 Return l-Matrix of SH coefficients in convention of FastTransforms.jl
