@@ -305,7 +305,7 @@ function transformGGridtoSH(A::AbstractArray{T,2}, p::QG3ModelParameters{T}, g::
     FTA = g.FT * A
 
     # deal with the complex array, turn it into half complex format
-    HCr = cat(real.(FTA), imag.(FTA), dims=2)
+    HCr = CUDA.cat(CUDA.real(FTA), CUDA.imag(FTA), dims=2)
 
     # truncation is performed in this step as Pw has 0s where the expansion is truncated
     @tullio out[il,im] := g.Pw[i,il,im] * HCr[i,im]
@@ -316,7 +316,7 @@ function transformGGridtoSH(A::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::
     FTA = g.FT_3d * A
 
     # deal with the complex array, turn it into half complex format
-    HCr = cat(real.(FTA), imag.(FTA), dims=3)
+    HCr = CUDA.cat(CUDA.real(FTA), CUDA.imag(FTA), dims=3)
 
     # truncation is performed in this step as Pw has 0s where the expansion is truncated
     @tullio out[ilvl,il,im] := g.Pw[ilat,il,im] * HCr[ilvl,ilat,im]
@@ -495,4 +495,18 @@ function transform_grid(data::AbstractArray{T,4}, p::QG3ModelParameters{T}, g::A
         data_sh[:,:,:,it] = transform_grid(data[:,:,:,it], p, g; kwargs...)
     end
     return data_sh
+end
+
+Zygote.@adjoint function *(P::AbstractFFTs.ScaledPlan, xs)
+  return P * xs, function(Δ)
+    N = prod(size(xs)[[P.p.region...]])
+    return (nothing, N * (P \ Δ))
+  end
+end
+
+Zygote.@adjoint function \(P::AbstractFFTs.ScaledPlan, xs)
+  return P \ xs, function(Δ)
+    N = prod(size(Δ)[[P.p.region...]])
+    return (nothing, (P * Δ)/N)
+  end
 end
