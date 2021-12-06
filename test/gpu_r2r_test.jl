@@ -70,3 +70,5 @@ if CUDA.functional()
 else
     println("No CUDA available, test skipped")
 end
+
+end
