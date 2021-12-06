@@ -81,10 +81,7 @@ function _SHtoGrid_dμθ(ψ::AbstractArray{T,2}, dP::AbstractArray{T,3}, p::QG3M
 
     @tullio out[ilat, im] := dP[ilat, il, im] * ψ[il, im]
 
-    Re = @view out[:,1:(Int(p.N_lons/2)+1)]
-    Im = @view out[:,(Int(p.N_lons/2)+2):end]
-
-    g.iFT * complex.(Re, Im)
+    g.iFT * out
 end
 
 # 3d field CPU
@@ -100,10 +97,7 @@ function _SHtoGrid_dμθ(ψ::AbstractArray{T,3}, dP::AbstractArray{T,3}, p::QG3M
 
     @tullio out[ilvl, ilat, im] := dP[ilat, il, im] * ψ[ilvl, il, im]
 
-    Re = @view out[:,:,1:(Int(p.N_lons/2)+1)]
-    Im = @view out[:,:,(Int(p.N_lons/2)+2):end]
-
-    g.iFT_3d * complex.(Re, Im)
+    g.iFT_3d * out
 end
 
 SHtoSH_dθ(ψ,m) = transform_SH(SHtoGrid_dθ(ψ,m), m)

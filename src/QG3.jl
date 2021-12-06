@@ -1,6 +1,6 @@
 module QG3
 
-using GSL, CUDA, FFTW, FastGaussQuadrature, Tullio, Flux, StatsBase, LinearAlgebra, FastTransforms, JLD2, Zygote
+using GSL, CUDA, FFTW, FastGaussQuadrature, Tullio, Flux, StatsBase, LinearAlgebra, FastTransforms, JLD2, Zygote, AbstractFFTs
 
 import GSL.sf_legendre_deriv_array_e
 import GSL.sf_legendre_deriv_alt_array_e
@@ -43,6 +43,7 @@ include("derivatives.jl")
 include("model_precomputations.jl")
 include("model.jl")
 include("model_gpu.jl")
+include("gpu_r2r_transform.jl")
 include("forcing.jl")
 
 export QG3ModelParameters, QG3Model, transform_SH, transform_grid, level_index

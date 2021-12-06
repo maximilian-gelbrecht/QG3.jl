@@ -255,20 +255,14 @@ end
 function transformSHtoGGrid(A::AbstractArray{T,2}, p::QG3ModelParameters{T}, g::GaussianGrid{T, true}) where T<:Number
     out = batched_vec(g.P,A)
 
-    Re = @view out[:,1:(Int(p.N_lons/2)+1)]
-    Im = @view out[:,(Int(p.N_lons/2)+2):end]
-
-    g.iFT * complex.(Re, Im)
+    g.iFT * out
 end
 
 # GPU/CUDA variant for 3d field
 function transformSHtoGGrid(A::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::GaussianGrid{T, true}) where T<:Number
     @tullio out[lvl, ilat, im] := g.P[ilat, il, im] * A[lvl, il, im]
 
-    Re = @view out[:,:,1:(Int(p.N_lons/2)+1)]
-    Im = @view out[:,:,(Int(p.N_lons/2)+2):end]
-
-    g.iFT_3d * complex.(Re, Im)
+    g.iFT_3d * out
 end
 
 """
@@ -304,22 +298,16 @@ function transformGGridtoSH(A::AbstractArray{T,2}, p::QG3ModelParameters{T}, g::
 
     FTA = g.FT * A
 
-    # deal with the complex array, turn it into half complex format
-    HCr = CUDA.cat(CUDA.real(FTA), CUDA.imag(FTA), dims=2)
-
     # truncation is performed in this step as Pw has 0s where the expansion is truncated
-    @tullio out[il,im] := g.Pw[i,il,im] * HCr[i,im]
+    @tullio out[il,im] := g.Pw[i,il,im] * FTA[i,im]
 end
 
 function transformGGridtoSH(A::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::GaussianGrid{T, true}) where T<:Number
 
     FTA = g.FT_3d * A
 
-    # deal with the complex array, turn it into half complex format
-    HCr = CUDA.cat(CUDA.real(FTA), CUDA.imag(FTA), dims=3)
-
     # truncation is performed in this step as Pw has 0s where the expansion is truncated
-    @tullio out[ilvl,il,im] := g.Pw[ilat,il,im] * HCr[ilvl,ilat,im]
+    @tullio out[ilvl,il,im] := g.Pw[ilat,il,im] * FTA[ilvl,ilat,im]
 end
 
 
@@ -495,18 +483,4 @@ function transform_grid(data::AbstractArray{T,4}, p::QG3ModelParameters{T}, g::A
         data_sh[:,:,:,it] = transform_grid(data[:,:,:,it], p, g; kwargs...)
     end
     return data_sh
-end
-
-Zygote.@adjoint function *(P::AbstractFFTs.ScaledPlan, xs)
-  return P * xs, function(Δ)
-    N = prod(size(xs)[[P.p.region...]])
-    return (nothing, N * (P \ Δ))
-  end
-end
-
-Zygote.@adjoint function \(P::AbstractFFTs.ScaledPlan, xs)
-  return P \ xs, function(Δ)
-    N = prod(size(Δ)[[P.p.region...]])
-    return (nothing, (P * Δ)/N)
-  end
 end
