@@ -22,7 +22,7 @@ end
 
 @eval plan_cur2r(plan::AbstractFFTs.Plan{T}, idim::Integer) where {T} = cur2rPlan{T,typeof(plan),Nothing,$FORWARD,typeof(idim)}(plan, idim, nothing)
 
-function plan_cur2r(arr::AbstractArray, N::Integer, idims=1)
+function plan_cuir2r(arr::AbstractArray, N::Integer, idims=1)
     plan = CUDA.CUFFT.plan_irfft(arr, N, idims)
     plan.pinv = CUDA.CUFFT.plan_inv(plan)
     return plan_icur2r(plan, N, idims)
