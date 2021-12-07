@@ -217,8 +217,8 @@ function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
             _FT_3d.pinv = CUDA.CUFFT.plan_inv(_FT_3d)
             _iFT_3d.pinv = CUDA.CUFFT.plan_inv(_iFT_3d)
 
-            FT = plan_cur2r(_FT_3d, 3)
-            iFT = plan_icur2r(_iFT_3d, p.N_lons, 3)
+            FT_3d = plan_cur2r(_FT_3d, 3)
+            iFT_3d = plan_icur2r(_iFT_3d, p.N_lons, 3)
 
             truncate_array = nothing
         else
