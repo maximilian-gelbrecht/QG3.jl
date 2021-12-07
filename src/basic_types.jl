@@ -204,8 +204,8 @@ function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
             _FT = CUDA.CUFFT.plan_rfft(A_real[1,:,:], 2)
             _iFT = CUDA.CUFFT.plan_irfft((FT*A_real[1,:,:]), p.N_lons, 2)
             # also set up the inverse plans for the adjoints, this is not done automatically by CUDA.jl
-            _FT.pinv = CUDA.CUFFT.plan_inv(FT)
-            _iFT.pinv = CUDA.CUFFT.plan_inv(iFT)
+            _FT.pinv = CUDA.CUFFT.plan_inv(_FT)
+            _iFT.pinv = CUDA.CUFFT.plan_inv(_iFT)
 
             # these work with AD (see gpu_r2r_transform.jl)
             FT = plan_cur2r(_FT, 2)
@@ -214,8 +214,8 @@ function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
             _FT_3d = CUDA.CUFFT.plan_rfft(A_real, 3)
             _iFT_3d = CUDA.CUFFT.plan_irfft((FT_3d*A_real), p.N_lons, 3)
 
-            _FT_3d.pinv = CUDA.CUFFT.plan_inv(FT_3d)
-            _iFT_3d.pinv = CUDA.CUFFT.plan_inv(iFT_3d)
+            _FT_3d.pinv = CUDA.CUFFT.plan_inv(_FT_3d)
+            _iFT_3d.pinv = CUDA.CUFFT.plan_inv(_iFT_3d)
 
             FT = plan_cur2r(_FT_3d, 3)
             iFT = plan_icur2r(_iFT_3d, p.N_lons, 3)
