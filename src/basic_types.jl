@@ -166,7 +166,7 @@ function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
 
     dPμdμ, __, P = compute_P(p)
     A_real = togpu(rand(T,3, p.N_lats, p.N_lons))
-    A_complex = togpu(rand(Complex{T},3, p.N_lats, p.N_lons/2 +1))
+    A_complex = togpu(rand(Complex{T},3, p.N_lats, Int(p.N_lons/2) +1))
 
     mm = compute_mmMatrix(p)
     mm_3d = make3d(mm)
