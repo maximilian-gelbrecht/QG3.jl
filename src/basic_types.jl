@@ -203,10 +203,10 @@ function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
             P, Pw, dPμdμ = reorder_SH_gpu(P, p), reorder_SH_gpu(Pw, p), reorder_SH_gpu(dPμdμ, p)
 
             FT = plan_cur2r(A_real[1,:,:], 2)
-            iFT = plan_icur2r(A_complex[1,:,:], p.N_lons, 2)
+            iFT = plan_cuir2r(A_complex[1,:,:], p.N_lons, 2)
 
             FT_3d = plan_cur2r(A_real, 3)
-            iFT_3d = plan_icur2r(A_complex, p.N_lons, 3)
+            iFT_3d = plan_cuir2r(A_complex, p.N_lons, 3)
 
             truncate_array = nothing
         else
