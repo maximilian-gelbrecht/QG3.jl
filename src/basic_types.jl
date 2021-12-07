@@ -166,6 +166,7 @@ function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
 
     dPμdμ, __, P = compute_P(p)
     A_real = togpu(rand(T,3, p.N_lats, p.N_lons))
+    A_complex = togpu(rand(Complex{T},3, p.N_lats, p.N_lons/2 +1))
 
     mm = compute_mmMatrix(p)
     mm_3d = make3d(mm)
@@ -202,10 +203,10 @@ function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
             P, Pw, dPμdμ = reorder_SH_gpu(P, p), reorder_SH_gpu(Pw, p), reorder_SH_gpu(dPμdμ, p)
 
             FT = plan_cur2r(A_real[1,:,:], 2)
-            iFT = plan_icur2r(FT*A_real[1,:,:], p.N_lons, 2)
-    
+            iFT = plan_icur2r(A_complex[1,:,:], p.N_lons, 2)
+
             FT_3d = plan_cur2r(A_real, 3)
-            iFT_3d = plan_icur2r(FT_3d*A_real, p.N_lons, 3)
+            iFT_3d = plan_icur2r(A_complex, p.N_lons, 3)
 
             truncate_array = nothing
         else

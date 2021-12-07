@@ -14,17 +14,17 @@ mutable struct cur2rPlan{U,T,S,K,R} <: AbstractFFTs.Plan{U}
     half_N_p1::S # N/2 + 1
 end
 
-function plan_cur2r(arr::CuArray, idims::Integer=1)
+function plan_cur2r(arr::AbstractArray, idims=1)
     plan = CUDA.CUFFT.plan_rfft(arr, idims)
-    plan.inv = CUDA.CUFFT.plan_inv(plan)
+    plan.pinv = CUDA.CUFFT.plan_inv(plan)
     return plan_cur2r(plan, idims)
 end
 
 @eval plan_cur2r(plan::AbstractFFTs.Plan{T}, idim::Integer) where {T} = cur2rPlan{T,typeof(plan),Nothing,$FORWARD,typeof(idim)}(plan, idim, nothing)
 
-function plan_cur2r(arr::CuArray, N::Integer, idims::Integer=1)
+function plan_cur2r(arr::AbstractArray, N::Integer, idims=1)
     plan = CUDA.CUFFT.plan_irfft(arr, N, idims)
-    plan.inv = CUDA.CUFFT.plan_inv(plan)
+    plan.pinv = CUDA.CUFFT.plan_inv(plan)
     return plan_icur2r(plan, N, idims)
 end
 
