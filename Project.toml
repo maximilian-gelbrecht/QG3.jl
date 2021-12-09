@@ -1,9 +1,10 @@
 name = "QG3"
 uuid = "d558103f-7907-4730-8f30-3d9252e5a318"
 authors = ["Maximilian Gelbrecht <maximilian.gelbrecht@posteo.de>"]
-version = "0.2.0"
+version = "0.3.0"
 
 [deps]
+AbstractFFTs = "621f4979-c628-5d54-868e-fcf4e3e8185c"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 CFTime = "179af706-886a-5703-950a-314cd64e0468"
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
@@ -23,6 +24,7 @@ NetCDF = "30363a11-5582-574a-97bb-aa9a979735b9"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 Tullio = "bc48ee85-29a4-5162-ae0b-a64e1601d4bc"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
+ZygoteRules = "700de1a5-db45-46bc-99cf-38207098b444"
 
 [compat]
 julia = "1.6"

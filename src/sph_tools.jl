@@ -28,7 +28,7 @@ function compute_P(L::Integer, M::Integer, μ::AbstractArray{T,1}; sh_norm=GSL_S
 
     for ilat ∈ 1:N_lats
         temp = sf_legendre_deriv_array_e(sh_norm, L - 1, μ[ilat], CSPhase)
-        temp_alt = sf_legendre_deriv_alt_array_e(sh_norm, L - 1, μ[ilat], CSPhase) 
+        temp_alt = sf_legendre_deriv_alt_array_e(sh_norm, L - 1, μ[ilat], CSPhase)
 
         for m ∈ -(L-1):(L-1)
             for il ∈ 1:(L - abs(m)) # l = abs(m):l_max
@@ -61,25 +61,25 @@ New order columns by m: 0, 1, 2, ... l_max, 0 (nothing), -1, -2, ..
 
 Incase CUDA is not used, it just return the input.
 """
-function reorder_SH_gpu(A::AbstractArray{T,2}, p::QG3ModelParameters{T}) where T<:Number
+function reorder_SH_gpu(A::AbstractArray{S,2}, p::QG3ModelParameters{T}) where {S,T}
     if !(cuda_used[])
         return A
     end
 
     reindex = [1:2:(p.N_lons+2);[(p.N_lons+2)]; 2:2:(p.N_lons+1)] # the middle one is the 0 (nothing)
-    out = zeros(T, p.N_lats, p.N_lons+2)
+    out = zeros(S, p.N_lats, p.N_lons+2)
     out[1:p.L, 1:p.M] = A
     return togpu(out[:,reindex])
 end
 
-function reorder_SH_gpu(A::AbstractArray{T,3}, p::QG3ModelParameters{T}) where T<:Number
+function reorder_SH_gpu(A::AbstractArray{S,3}, p::QG3ModelParameters{T}) where {S,T}
     if !(cuda_used[])
         return A
     end
 
     reindex = [1:2:(p.N_lons+2);[(p.N_lons+2)]; 2:2:(p.N_lons+1)]
 
-    out = zeros(T, size(A, 1), p.N_lats, p.N_lons+2)
+    out = zeros(S, size(A, 1), p.N_lats, p.N_lons+2)
     out[:, 1:p.L, 1:p.M] = A
     return togpu(out[:,:,reindex])
 end
@@ -119,13 +119,18 @@ Change the sign of the m in SH (FastTranforms.jl convention of storing them). Th
 
 there is currently a bug or at least missing feature in Zygote, the AD library, that stops views from always working flawlessly when a view is mixed with prior indexing of an array. We need a view for the derivative after φ to change the sign of m, so here is a differentiable variant of the SHtoSH_dφ function for the 2d field
 """
-change_msign(A::AbstractArray{T,2}, swap_array) where T<:Number = @inbounds view(A,:,swap_array)
+change_msign(A::AbstractArray{T,2}, swap_array::AbstractArray{Int,1}) where T<:Number = @inbounds view(A,:,swap_array)
 
 # 3d field version
-change_msign(A::AbstractArray{T,3}, swap_array) where T<:Number = @inbounds view(A,:,:,swap_array)
+change_msign(A::AbstractArray{T,3}, swap_array::AbstractArray{Int,1}) where T<:Number = @inbounds view(A,:,:,swap_array)
 
-change_msign(A::AbstractArray{T,3}, i::Integer, swap_array) where T<:Number = @inbounds view(A,i,:,swap_array)
+#=
+Zygote.@adjoint function change_msign(A::AbstractArray{T,3}, swap_array::Vector{Int}) where T<:Number
+    return (change_msign(A, swap_array), Δ->(change_msign(Δ,swap_array),))
+end
+=#
 
+change_msign(A::AbstractArray{T,3}, i::Integer, swap_array::AbstractArray{Int,1}) where T<:Number = @inbounds view(A,i,:,swap_array)
 
 """
 Return l-Matrix of SH coefficients in convention of FastTransforms.jl
@@ -250,20 +255,14 @@ end
 function transformSHtoGGrid(A::AbstractArray{T,2}, p::QG3ModelParameters{T}, g::GaussianGrid{T, true}) where T<:Number
     out = batched_vec(g.P,A)
 
-    Re = @view out[:,1:(Int(p.N_lons/2)+1)]
-    Im = @view out[:,(Int(p.N_lons/2)+2):end]
-
-    g.iFT * complex.(Re, Im)
+    g.iFT * out
 end
 
 # GPU/CUDA variant for 3d field
 function transformSHtoGGrid(A::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::GaussianGrid{T, true}) where T<:Number
     @tullio out[lvl, ilat, im] := g.P[ilat, il, im] * A[lvl, il, im]
 
-    Re = @view out[:,:,1:(Int(p.N_lons/2)+1)]
-    Im = @view out[:,:,(Int(p.N_lons/2)+2):end]
-
-    g.iFT_3d * complex.(Re, Im)
+    g.iFT_3d * out
 end
 
 """
@@ -299,22 +298,16 @@ function transformGGridtoSH(A::AbstractArray{T,2}, p::QG3ModelParameters{T}, g::
 
     FTA = g.FT * A
 
-    # deal with the complex array, turn it into half complex format
-    HCr = cat(real.(FTA), imag.(FTA), dims=2)
-
     # truncation is performed in this step as Pw has 0s where the expansion is truncated
-    @tullio out[il,im] := g.Pw[i,il,im] * HCr[i,im]
+    @tullio out[il,im] := g.Pw[i,il,im] * FTA[i,im]
 end
 
 function transformGGridtoSH(A::AbstractArray{T,3}, p::QG3ModelParameters{T}, g::GaussianGrid{T, true}) where T<:Number
 
     FTA = g.FT_3d * A
 
-    # deal with the complex array, turn it into half complex format
-    HCr = cat(real.(FTA), imag.(FTA), dims=3)
-
     # truncation is performed in this step as Pw has 0s where the expansion is truncated
-    @tullio out[ilvl,il,im] := g.Pw[ilat,il,im] * HCr[ilvl,ilat,im]
+    @tullio out[ilvl,il,im] := g.Pw[ilat,il,im] * FTA[ilvl,ilat,im]
 end
 
 

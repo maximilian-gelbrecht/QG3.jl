@@ -26,9 +26,8 @@ derivative of input after φ (polar angle) or λ (longtitude) in SH to Grid, onl
 """
 SHtoGrid_dφ(ψ, m::QG3Model{T}) where T<:Number = transform_grid(SHtoSH_dφ(ψ,m), m)
 
-SHtoGrid_dφ(ψ::AbstractArray{T,3}, i::Integer, m::QG3Model{T}) where T<:Number = transform_grid(SHtoSH_dφ(ψ, i, m), m)
 SHtoGrid_dλ(ψ, m) = SHtoGrid_dφ(ψ, m)
-SHtoGrid_dλ(ψ, i, m) = SHtoGrid_dφ(ψ, i, m)
+SHtoSH_dλ(ψ, m) = SHtoSH_dφ(ψ, m)
 
 
 """
@@ -36,6 +35,7 @@ derivative of input after φ (polar angle/longtitude) in SH, output in SH
 """
 SHtoSH_dφ(ψ, m::QG3Model{T}) where T<:Number = SHtoSH_dφ(ψ, m.g)
 
+# 2d field variant
 SHtoSH_dφ(ψ::AbstractArray{T,2}, g::AbstractGridType{T}) where T<:Number = _SHtoSH_dφ(ψ, g.mm, g.swap_m_sign_array)
 
 # 3d field variant
@@ -43,20 +43,6 @@ SHtoSH_dφ(ψ::AbstractArray{T,3}, g::AbstractGridType{T}) where T<:Number = _SH
 
 _SHtoSH_dφ(ψ, mm, swap_arr) where T<:Number = mm .* change_msign(ψ, swap_arr)
 
-
-"""
-derivative of input after φ (polar angle/longtitude) in SH, output in SH
-
-these are  variants with AbstractArray{T,3} and index i to select which layer is the input for the derivative.
-
-there is currently a bug or at least missing feature in Zygote, the AD library, that stops views from always working flawlessly when a view is mixed with prior indexing of an array. We need a view for the derivative after φ to change the sign of m, so here is a differentiable variant of the SHtoSH_dφ function
-"""
-SHtoSH_dφ(ψ::AbstractArray{T,3}, i::Integer, m::QG3Model{T}) where T<:Number = _SHtoSH_dφ(ψ, i, m.g.mm, m.g.swap_m_sign_array)
-
-_SHtoSH_dφ(ψ::AbstractArray{T,3}, i::Integer, mm::AbstractArray{T,2}, swap_array::AbstractArray{Int,1}) where T<:Number = mm .* change_msign(ψ, i, swap_array)
-
-SHtoSH_dλ(ψ, m) = SHtoSH_dφ(ψ, m)
-SHtoSH_dλ(ψ, i, m) = SHtoSH_dφ(ψ, i, m)
 
 
 """
@@ -95,10 +81,7 @@ function _SHtoGrid_dμθ(ψ::AbstractArray{T,2}, dP::AbstractArray{T,3}, p::QG3M
 
     @tullio out[ilat, im] := dP[ilat, il, im] * ψ[il, im]
 
-    Re = @view out[:,1:(Int(p.N_lons/2)+1)]
-    Im = @view out[:,(Int(p.N_lons/2)+2):end]
-
-    g.iFT * complex.(Re, Im)
+    g.iFT * out
 end
 
 # 3d field CPU
@@ -114,10 +97,7 @@ function _SHtoGrid_dμθ(ψ::AbstractArray{T,3}, dP::AbstractArray{T,3}, p::QG3M
 
     @tullio out[ilvl, ilat, im] := dP[ilat, il, im] * ψ[ilvl, il, im]
 
-    Re = @view out[:,:,1:(Int(p.N_lons/2)+1)]
-    Im = @view out[:,:,(Int(p.N_lons/2)+2):end]
-
-    g.iFT_3d * complex.(Re, Im)
+    g.iFT_3d * out
 end
 
 SHtoSH_dθ(ψ,m) = transform_SH(SHtoGrid_dθ(ψ,m), m)
