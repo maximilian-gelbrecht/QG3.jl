@@ -1,3 +1,5 @@
+import Base.show
+
 """
     QG3ModelParameters{T}
 
@@ -98,6 +100,8 @@ togpu(p::QG3ModelParameters) = QG3ModelParameters(p.L, p.M, p.N_lats, p.N_lons, 
 
 tocpu(p::QG3ModelParameters) = QG3ModelParameters(p.L, p.M, p.N_lats, p.N_lons, tocpu(p.lats), tocpu(p.θ), tocpu(p.μ), tocpu(p.lons), tocpu(p.LS), tocpu(p.h), p.R1i, p.R2i, p.H0, p.τRi, p.τEi, p.cH, p.α1, p.α2, p.a, p.Ω, p.gridtype, p.time_unit, p.distance_unit, p.ψ_unit, p.q_unit)
 
+show(io::IO, p::QG3ModelParameters{T}) where {T} = print(io," QG3 Parameters with N_lats=",p.N_lats," N_lons=",p.N_lons," L_max=",p.L-1)
+
 """
     AbstractGridType{T, onGPU}
 
@@ -119,6 +123,9 @@ struct RegularGrid{T, onGPU} <: AbstractGridType{T, onGPU}
     mm_3d::AbstractArray{T,3} # (-m) SH number matrix, used for zonal derivative for 3d fields
     swap_m_sign_array # indexing array, used to swap the sign of the m SH number, used for zonal derivative
 end
+
+show(io::IO, g::RegularGrid) = print(io, " Regular Grid (FastTransforms.jl)")
+
 
 """
      GaussianGrid{T, onGPU} <: AbstractGridType{T, onGPU}
@@ -156,6 +163,9 @@ struct GaussianGrid{T, onGPU} <: AbstractGridType{T, onGPU}
     mm_3d::AbstractArray{T,3}
     swap_m_sign_array
 end
+
+show(io::IO, g::GaussianGrid{T, true}) where {T} = print(io," Gaussian Grid on GPU")
+show(io::IO, g::GaussianGrid{T, false}) where {T} = print(io," Gaussian Grid on CPU")
 
 """
     grid(p::QG3ModelParameters{T})
@@ -319,6 +329,8 @@ function QG3Model(p::QG3ModelParameters)
 
     return QG3Model(p, g, k, TRcoeffs, TR_matrix, cosϕ, acosϕi, Δ, Tψq, Tqψ, f, f_J3, ∇8, make3d(∇8), ∂k∂ϕ, ∂k∂μ, ∂k∂λ)
 end
+
+show(io::IO, m::QG3Model{T}) where {T} = print(io, "Pre-computed QG3Model{",T,"} with ",m.p, " on a",m.g)
 
 """
     isongpu(m::QG3Model{T})
