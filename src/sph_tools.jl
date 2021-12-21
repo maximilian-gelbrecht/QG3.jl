@@ -101,7 +101,7 @@ function get_lowertriangle_sum(A)
 end
 
 """
-    change_msign(A)
+    change_msign!(A)
 
 Change the sign of the m in SH (FastTranforms.jl convention of storing them). This version swaps the columns inplace
 """
@@ -124,11 +124,9 @@ change_msign(A::AbstractArray{T,2}, swap_array::AbstractArray{Int,1}) where T<:N
 # 3d field version
 change_msign(A::AbstractArray{T,3}, swap_array::AbstractArray{Int,1}) where T<:Number = @inbounds view(A,:,:,swap_array)
 
-#=
-Zygote.@adjoint function change_msign(A::AbstractArray{T,3}, swap_array::Vector{Int}) where T<:Number
-    return (change_msign(A, swap_array), Δ->(change_msign(Δ,swap_array),))
+Zygote.@adjoint function change_msign(A::AbstractArray{T,N}, swap_array::AbstractArray{Int,1}) where {T,N}
+    return (change_msign(A,swap_array), Δ->(change_msign(Δ,swap_array),nothing))
 end
-=#
 
 change_msign(A::AbstractArray{T,3}, i::Integer, swap_array::AbstractArray{Int,1}) where T<:Number = @inbounds view(A,i,:,swap_array)
 

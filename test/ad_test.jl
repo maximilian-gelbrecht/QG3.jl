@@ -1,7 +1,7 @@
 # here we test that the model is differentiable. It's hard to come up with a proper test, so right now it just looks that Zygote gives no error and the both implementations have the same gradient
 @testset "Basic AD capability" begin
 
-using QG3, BenchmarkTools, DifferentialEquations, JLD2, Zygote
+using QG3, BenchmarkTools, DifferentialEquations, JLD2, Zygote, Flux
 
 # load forcing and model parameters
 S, qg3ppars, ψ_0, q_0 = QG3.load_precomputed_data()
@@ -38,5 +38,41 @@ end
 B = g[a]
 
 @test mean(abs.(A - B)) < 1e-10
+
+
+
+# here we test one of the extra ad rules that are given so that AD does not use scalar indexing on GPU, we do that be comparing the naive Zygote gradient with the custom gradient that is implemented in the library. On CPU both work, on GPU only the custom gradient will work
+
+swap_array = qg3p.g.swap_m_sign_array
+
+swap_sign(A::AbstractArray{T,2},swap) where {T} = @inbounds view(A,:,swap)
+
+swap_sign(A::AbstractArray{T,3},swap) where {T} = @inbounds view(A,:,:,swap)
+
+g = gradient(Params([a])) do
+    sum(a .* swap_sign(q_0,swap_array))
+end
+B = g[a]
+
+g2 = gradient(Params([a])) do
+    sum(a .* QG3.change_msign(q_0,swap_array))
+end
+A = g[a]
+
+@test A ≈ B
+
+a = rand(size(a)...)
+loss(x) = sum(abs2,QG3.change_msign(a .* QG3.change_msign(q_0,swap_array), swap_array) - x)
+
+loss(q_0)
+
+using Flux
+for i=1:5000
+    Flux.train!(loss, Flux.params(a), [q_0], ADAM())
+end
+
+@test loss(q_0) < 1e-1
+
+
 
 end
