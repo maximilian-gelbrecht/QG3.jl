@@ -20,7 +20,7 @@ function plan_cur2r(arr::AbstractArray, idims=1)
     return plan_cur2r(plan, size(arr,idims), idims)
 end
 
-@eval plan_cur2r(plan::AbstractFFTs.Plan{T}, N::Integer, idim::Integer) where {T} = cur2rPlan{T,typeof(plan),Nothing,$FORWARD,typeof(idim)}(plan, idim, (N/2) + 1)
+@eval plan_cur2r(plan::AbstractFFTs.Plan{T}, N::Integer, idim::Integer) where {T} = cur2rPlan{T,typeof(plan),Nothing,$FORWARD,typeof(idim)}(plan, idim, Int(N/2) + 1)
 
 function plan_cuir2r(arr::AbstractArray, N::Integer, idims=1)
     plan = CUDA.CUFFT.plan_irfft(arr, N, idims)
@@ -28,7 +28,7 @@ function plan_cuir2r(arr::AbstractArray, N::Integer, idims=1)
     return plan_cuir2r(plan, N, idims)
 end
 
-@eval plan_cuir2r(plan::AbstractFFTs.Plan{T}, N::Integer, idim::Integer) where {T} = cur2rPlan{T,typeof(plan),typeof(N),$BACKWARD,typeof(idim)}(plan, idim, (N/2) + 1)
+@eval plan_cuir2r(plan::AbstractFFTs.Plan{T}, N::Integer, idim::Integer) where {T} = cur2rPlan{T,typeof(plan),typeof(N),$BACKWARD,typeof(idim)}(plan, idim, Int(N/2) + 1)
 
 size(p::cur2rPlan, d) = size(p.plan, d)
 ndims(p::cur2rPlan) = ndims(p.plan)
