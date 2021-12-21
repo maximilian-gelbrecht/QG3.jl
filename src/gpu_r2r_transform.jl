@@ -11,16 +11,16 @@ const BACKWARD = 1
 mutable struct cur2rPlan{U,T,S,K,R} <: AbstractFFTs.Plan{U}
     plan::T
     region::R
-    half_N_p1::S # N/2 + 1
+    half_N_p1::S # N/2 + 1, size in complex domain
 end
 
 function plan_cur2r(arr::AbstractArray, idims=1)
     plan = CUDA.CUFFT.plan_rfft(arr, idims)
     plan.pinv = CUDA.CUFFT.plan_inv(plan)
-    return plan_cur2r(plan, idims)
+    return plan_cur2r(plan, size(arr,idims), idims)
 end
 
-@eval plan_cur2r(plan::AbstractFFTs.Plan{T}, idim::Integer) where {T} = cur2rPlan{T,typeof(plan),Nothing,$FORWARD,typeof(idim)}(plan, idim, nothing)
+@eval plan_cur2r(plan::AbstractFFTs.Plan{T}, N::Integer, idim::Integer) where {T} = cur2rPlan{T,typeof(plan),Nothing,$FORWARD,typeof(idim)}(plan, idim, (N/2) + 1)
 
 function plan_cuir2r(arr::AbstractArray, N::Integer, idims=1)
     plan = CUDA.CUFFT.plan_irfft(arr, N, idims)

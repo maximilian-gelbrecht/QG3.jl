@@ -19,7 +19,7 @@ if CUDA.functional()
     _fft_plan = CUDA.CUFFT.plan_rfft(A, 1)
     _ifft_plan = CUDA.CUFFT.plan_irfft(_fft_plan*A, size(A,1), 1)
 
-    fft_plan = plan_cur2r(_fft_plan, 1)
+    fft_plan = plan_cur2r(_fft_plan, size(A,1), 1)
     ifft_plan = plan_cuir2r(_ifft_plan, size(A,1), 1)
 
     func(x) = ifft_plan*(fft_plan*(W .* x))
@@ -36,7 +36,7 @@ if CUDA.functional()
     _fft_plan = CUDA.CUFFT.plan_rfft(A2, 2)
     _ifft_plan = CUDA.CUFFT.plan_irfft((_fft_plan*A2), size(A2,2), 2)
 
-    fft_plan = plan_cur2r(_fft_plan, 2)
+    fft_plan = plan_cur2r(_fft_plan, size(A2,2), 2)
     ifft_plan = plan_cuir2r(_ifft_plan, size(A2,2), 2)
 
     func(x) = ifft_plan*(fft_plan*(W2 .* x))
@@ -54,7 +54,7 @@ if CUDA.functional()
     _fft_plan = CUDA.CUFFT.plan_rfft(A3, 3)
     _ifft_plan = CUDA.CUFFT.plan_irfft(_fft_plan*A3, size(A2,3), 3)
 
-    fft_plan = plan_cur2r(_fft_plan, 3)
+    fft_plan = plan_cur2r(_fft_plan, size(A3,3), 3)
     ifft_plan = plan_cuir2r(_ifft_plan, size(A3,3), 3)
 
     func(x) = ir2r_plan*(r2r_plan*(W3 .* x))
