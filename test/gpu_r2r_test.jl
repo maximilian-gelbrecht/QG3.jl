@@ -9,6 +9,7 @@ if CUDA.functional()
 
     A = CUDA.rand(100);
     W = CUDA.rand(100);
+    V = CUDA.rand(102);
 
     A2 = CUDA.rand(10,100);
     W2 = CUDA.rand(10,100);
@@ -32,6 +33,17 @@ if CUDA.functional()
     end
 
     @test sum(abs2,W .- 1) < 1e-4
+
+    V = CUDA.rand(102);
+    func2(x) = ifft_plan*(W2 .* (fft_plan*x))
+    loss2(x,y) = sum(abs2,func2(x)-y)
+    loss2(A,A)
+    for i=1:2000
+        Flux.train!(loss2, Flux.params(V), [(A,A)], ADAM())
+    end
+
+    @test loss2(A,A) < 1e-4
+
 
     _fft_plan = CUDA.CUFFT.plan_rfft(A2, 2)
     _ifft_plan = CUDA.CUFFT.plan_irfft((_fft_plan*A2), size(A2,2), 2)
