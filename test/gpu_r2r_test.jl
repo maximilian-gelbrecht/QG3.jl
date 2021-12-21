@@ -5,6 +5,7 @@ if CUDA.functional()
 
     using CUDA.CUFFT
     using Flux
+    using QG3
 
     A = CUDA.rand(100);
     W = CUDA.rand(100);

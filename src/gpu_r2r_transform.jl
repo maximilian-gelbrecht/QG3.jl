@@ -40,11 +40,13 @@ summary(p::cur2rPlan) = string("R2R wrapper of ", summary(p.p))
 
 @eval *(p::cur2rPlan{U,T,S,$BACKWARD}, x::CuArray) where {U,T,S} = p.plan * to_complex(x, p.region, p.half_N_p1)
 
-inv(p::cur2rPlan) = inv(p.plan)
+@eval \(p::cur2rPlan{U,T,S,$FORWARD}, x::CuArray) = p.plan \ to_complex(x, p.region, p.half_N_p1)
 
-\(p::cur2rPlan, x::CuArray) = p.plan \ x
+@eval \(p::cur2rPlan{U,T,S,$BACKWARD}, x::CuArray) = to_real(p.plan \ x, p.region)
 
-LinearAlgebra.ldiv!(y::CuArray, p::cur2rPlan, x::CuArray) = LinearAlgebra.ldiv!(y, p.plan, x)
+LinearAlgebra.ldiv!(y::CuArray, p::cur2rPlan{U,T,S,$FORWARD}, x::CuArray) = LinearAlgebra.ldiv!(y, p.plan, to_complex(x, p.region, p.half_N_p1))
+
+LinearAlgebra.ldiv!(y::CuArray, p::cur2rPlan{U,T,S,$BACKWARD}, x::CuArray) = to_real(LinearAlgebra.ldiv!(y, p.plan, x), p.region)
 
 to_real(input_array::CuArray, region::Integer) where {T} = CUDA.cat(CUDA.real(input_array), CUDA.imag(input_array), dims=region)
 
