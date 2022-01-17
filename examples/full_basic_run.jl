@@ -66,7 +66,8 @@ t_end = 500.
 
 # problem definition with standard model from the library and solve
 prob = ODEProblem(QG3.QG3MM_base, q_0, (0.,t_end), [qg3p, S])
-sol = @time solve(prob, AB5(), dt=DT)
+#sol = @time solve(prob, AB5(), dt=DT)
+sol = @time solve(prob, Tsit5(), dt=DT)
 
 
 # PLOT OPtiON
