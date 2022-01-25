@@ -28,7 +28,7 @@ function plan_cuir2r(arr::AbstractArray{T,S}, N::Integer, idims=1) where {T,S}
       arr_size = [size(arr)...]
       arr_size[idims] = Int(arr_size[idims]/2) + 1
       arr_size = Tuple(arr_size)
-      arr = zeros(Complex{T}, arr_size...)
+      arr = CUDA.zeros(Complex{T}, arr_size...)
     end
     plan = CUDA.CUFFT.plan_irfft(arr, N, idims)
     plan.pinv = CUDA.CUFFT.plan_inv(plan)
