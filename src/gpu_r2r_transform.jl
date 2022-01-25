@@ -4,6 +4,7 @@
 using LinearAlgebra
 import Base: *, \, inv, size, ndims, length, show, summary
 import LinearAlgebra: mul!
+import CUDA.CUFFT
 
 const FORWARD = -1
 const BACKWARD = 1

@@ -1,6 +1,8 @@
 module QG3
 
-using GSL, CUDA, FFTW, FastGaussQuadrature, Tullio, Flux, StatsBase, LinearAlgebra, FastTransforms, JLD2, Zygote, AbstractFFTs
+using GSL, CUDA, FastGaussQuadrature, Tullio, Flux, StatsBase, LinearAlgebra, FastTransforms, JLD2, Zygote, AbstractFFTs
+import FFTW
+import CUDA.CUFFT
 
 import GSL.sf_legendre_deriv_array_e
 import GSL.sf_legendre_deriv_alt_array_e
@@ -31,7 +33,7 @@ function gpuoff()
 end
 
 
-using CUDA.CUFFT, CUDAKernels, KernelAbstractions
+using CUDAKernels, KernelAbstractions
 
 togpu(x::AbstractArray) = cuda_used[] ? CuArray(x) : x
 tocpu(x) = cuda_used[] ? Array(x) : x
