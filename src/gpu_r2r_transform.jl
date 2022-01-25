@@ -22,7 +22,13 @@ end
 
 @eval plan_cur2r(plan::AbstractFFTs.Plan{T}, N::Integer, idim::Integer) where {T} = cur2rPlan{T,typeof(plan),typeof(N),$FORWARD,typeof(idim)}(plan, idim, Int(N/2) + 1)
 
-function plan_cuir2r(arr::AbstractArray, N::Integer, idims=1)
+function plan_cuir2r(arr::AbstractArray{T,N}, N::Integer, idims=1) where {T,N}
+    if !(T <: Complex)
+      arr_size = [size(arr)...]
+      arr_size[idims] = Int(arr_size[idims]/2) + 1
+      arr_size = Tuple(arr_size)
+      arr = zeros(Complex{T}, arr_size...)
+    end
     plan = CUDA.CUFFT.plan_irfft(arr, N, idims)
     plan.pinv = CUDA.CUFFT.plan_inv(plan)
     return plan_cuir2r(plan, N, idims)
