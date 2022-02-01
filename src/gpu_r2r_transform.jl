@@ -46,7 +46,7 @@ function plan_cuir2r(arr::AbstractArray{T,S}, d::Int, dims=1) where {T,S}
     invN = AbstractFFTs.normalization(arr, dims)
 
     if !(T <: Complex)
-      arr_size[idims] = n
+      arr_size[dims] = n
       arr_size = Tuple(arr_size)
       arr = CUDA.zeros(Complex{T}, arr_size...)
     end
