@@ -63,7 +63,7 @@ function plan_cuir2r(arr::AbstractArray{T,S}, d::Int, dims=1) where {T,S}
     return plan_cuir2r(plan, dims, d, n, scale)
 end
 
-@eval plan_cur2r(plan::AbstractFFTs.Plan{T}, region, d::Integer, n::Integer, scale) where {T} = cur2rPlan{$BACKWARD,T,typeof(plan),typeof(region),typeof(d),typeof(n),typeof(scale)}(plan, region, d, n, scale)
+@eval plan_cuir2r(plan::AbstractFFTs.Plan{T}, region, d::Integer, n::Integer, scale) where {T} = cur2rPlan{$BACKWARD,T,typeof(plan),typeof(region),typeof(d),typeof(n),typeof(scale)}(plan, region, d, n, scale)
 
 size(p::cur2rPlan, d) = size(p.plan, d)
 ndims(p::cur2rPlan) = ndims(p.plan)
