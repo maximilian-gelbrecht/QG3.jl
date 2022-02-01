@@ -20,7 +20,7 @@ mutable struct cur2rPlan{F,U,T,R,S,V,W} <: AbstractFFTs.Plan{U}
 end
 
 function plan_cur2r(arr::AbstractArray, dims=1)
-    plan = CUDA.CUFFT.plan_rfft(arr, idims)
+    plan = CUDA.CUFFT.plan_rfft(arr, dims)
     plan.pinv = CUDA.CUFFT.plan_inv(plan)
 
     # AD scaling
