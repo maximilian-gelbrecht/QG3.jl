@@ -42,7 +42,7 @@ if CUDA.functional()
     @test loss2(A,A) < 1e-4
 
     fft_plan = plan_cur2r(A2, 2)
-    ifft_plan = plan_cuir2r(A2, 2)
+    ifft_plan = plan_cuir2r(fft_plan*A2, 100, 2)
 
     func(x) = ifft_plan*(fft_plan*(W2 .* x))
     loss(x,y) = sum(abs2,func(x)-y)
@@ -56,7 +56,7 @@ if CUDA.functional()
     @test sum(abs2,W2 .- 1) < 1e-3
 
     fft_plan = plan_cur2r(A3, 3)
-    ifft_plan = plan_cuir2r(A3, 3)
+    ifft_plan = plan_cuir2r(fft_plan*A3, 100, 3)
 
     func(x) = ir2r_plan*(r2r_plan*(W3 .* x))
     loss(x,y) = sum(abs2,func(x)-y)

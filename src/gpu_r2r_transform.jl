@@ -29,8 +29,9 @@ function plan_cur2r(arr::AbstractArray, dims=1)
     n = size(plan * arr, halfdim)
     scale = reshape(
         [i == 1 || (i == n && 2 * (i - 1) == d) ? 1 : 2 for i in 1:n],
-        ntuple(i -> i == first(dims) ? n : 1, Val(ndims(x))),
+        ntuple(i -> i == first(dims) ? n : 1, Val(ndims(arr))),
     )
+    scale = [scale; scale] # double cause it's r2r in the format given be to_complex
 
     return plan_cur2r(plan, dims, d, n, scale)
 end
@@ -38,11 +39,10 @@ end
 @eval plan_cur2r(plan::AbstractFFTs.Plan{T}, region, d::Integer, n::Integer, scale) where {T} = cur2rPlan{$FORWARD,T,typeof(plan),typeof(region),typeof(d),typeof(n),typeof(scale)}(plan, region, d, n, scale)
 
 # input in arr in real domain
-function plan_cuir2r(arr::AbstractArray{T,S}, dims=1) where {T,S}
+function plan_cuir2r(arr::AbstractArray{T,S}, d::Int, dims=1) where {T,S}
     arr_size = [size(arr)...]
     halfdim = first(dims)
-    n = Int(floor(arr_size[halfdim]/2)) + 1
-    d = arr_size[halfdim]
+    n = Int(arr_size[halfdim]/2)
     invN = AbstractFFTs.normalization(arr, dims)
 
     if !(T <: Complex)
@@ -54,8 +54,9 @@ function plan_cuir2r(arr::AbstractArray{T,S}, dims=1) where {T,S}
     twoinvN = 2 * invN
     scale = reshape(
         [i == 1 || (i == n && 2 * (i - 1) == d) ? invN : twoinvN for i in 1:n],
-        ntuple(i -> i == first(dims) ? n : 1, Val(ndims(x))),
+        ntuple(i -> i == first(dims) ? n : 1, Val(ndims(arr))),
     )
+    scale = [scale; scale]
 
     plan = CUDA.CUFFT.plan_irfft(arr, d, dims)
     plan.pinv = CUDA.CUFFT.plan_inv(plan)
