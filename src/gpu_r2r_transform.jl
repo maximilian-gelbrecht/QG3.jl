@@ -115,7 +115,7 @@ end
      project_x = ChainRulesCore.ProjectTo(x)
      function cur2r_pullback(ȳ)
          x̄ = project_x(((P \ ChainRulesCore.unthunk(ȳ)) ./ scale).*d) # instead of brfft, d removes the normalization of the irfft
-         return ChainRulesCore.NoTangent(), ChainRulesCore.ZeroTangent(), x̄
+         return ChainRulesCore.NoTangent(), ChainRulesCore.NoTangent(), x̄
      end
      return y, cur2r_pullback
  end
@@ -131,7 +131,7 @@ end
 
     function cuir2r_pullback(ȳ)
         x̄ = project_x(scale .* (P \ real(ChainRulesCore.unthunk(ȳ))))
-        return ChainRulesCore.NoTangent(), ChainRulesCore.ZeroTangent(), x̄
+        return ChainRulesCore.NoTangent(), ChainRulesCore.NoTangent(), x̄
     end
     return y, cuir2r_pullback
 end
