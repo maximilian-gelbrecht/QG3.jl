@@ -5,6 +5,7 @@ using LinearAlgebra
 import Base: *, \, inv, size, ndims, length, show, summary
 import LinearAlgebra: mul!
 import CUDA.CUFFT
+import AbstractFFTs
 using ChainRulesCore
 import ChainRulesCore.rrule
 
@@ -27,16 +28,21 @@ function plan_cur2r(arr::AbstractArray, dims=1)
     halfdim = first(dims)
     d = size(arr, halfdim)
     n = size(plan * arr, halfdim)
-    scale = reshape(
-        [i == 1 || (i == n && 2 * (i - 1) == d) ? 1 : 2 for i in 1:n],
-        ntuple(i -> i == first(dims) ? n : 1, Val(ndims(arr))),
-    )
+    scale = ADscale_r2r(n, d, dims, ndims(arr))
     scale = [scale; scale] # double cause it's r2r in the format given be to_complex
 
     return plan_cur2r(plan, dims, d, n, scale)
 end
 
 @eval plan_cur2r(plan::AbstractFFTs.Plan{T}, region, d::Integer, n::Integer, scale) where {T} = cur2rPlan{$FORWARD,T,typeof(plan),typeof(region),typeof(d),typeof(n),typeof(scale)}(plan, region, d, n, scale)
+
+function ADscale_r2r(n, d, dims, N_dims)
+    reshape(
+        [i == 1 || (i == n && 2 * (i - 1) == d) ? 1 : 2 for i in 1:n],
+        ntuple(i -> i == first(dims) ? n : 1, Val(ndims(arr))),
+    )
+    return scale
+end
 
 # input in arr in real domain
 function plan_cuir2r(arr::AbstractArray{T,S}, d::Int, dims=1) where {T,S}
@@ -65,6 +71,8 @@ end
 
 @eval plan_cuir2r(plan::AbstractFFTs.Plan{T}, region, d::Integer, n::Integer, scale) where {T} = cur2rPlan{$BACKWARD,T,typeof(plan),typeof(region),typeof(d),typeof(n),typeof(scale)}(plan, region, d, n, scale)
 
+
+
 size(p::cur2rPlan, d) = size(p.plan, d)
 ndims(p::cur2rPlan) = ndims(p.plan)
 length(p::cur2rPlan) = length(p.plan)
@@ -92,18 +100,70 @@ function to_complex(input_array::AbstractArray{T,N}, region::Integer, cutoff_ind
     CUDA.complex.(Re,Im)
 end
 
-Zygote.@adjoint function *(P::AbstractFFTs.ScaledPlan, xs)
-  return P * xs, function(Δ)
-    N = prod(size(xs)[[P.p.region...]])
-    return (nothing, N * (P \ Δ))
-  end
+@eval Zygote.@adjoint function *(P::cur2rPlan{$FORWARD,U,T,R,S,V,W}, x::AbstractArray{<:Real}) where {U,T,R,S,V,W}
+    y = P*x
+
+    scale = P.ADscale
+    d = P.d
+    return y, function(Δ)
+        x̄ = (P \ (Δ ./ scale)) .* d
+        return (nothing, x̄)
+    end
 end
-Zygote.@adjoint function \(P::AbstractFFTs.ScaledPlan, xs)
-  return P \ xs, function(Δ)
-    N = prod(size(Δ)[[P.p.region...]])
-    return (nothing, (P * Δ)/N)
-  end
+
+@eval Zygote.@adjoint function
+*(P::cur2rPlan{$BACKWARD,U,T,R,S,V,W}, x::AbstractArray) where {U,T,R,S,V,W}
+    y = P*x
+
+    scale = P.ADscale
+    dims = P.region
+    return y, function(Δ)
+        x̄ = (scale .* (P \ real(Δ)))
+        return (nothing, x̄)
+    end
 end
+
+# additional plan for FFTW r2r plan
+Zygote.@adjoint function *(P::FFTW.r2rFFTWPlan{<:Number,(0,)}, x::AbstractArray{<:Real})
+    y = P*x
+
+    dims = tuple(P.region...)
+    halfdim = first(dims)
+    n = AbstractFFTs.rfft_output_size(P.osz,P.region)
+    d = P.sz[halfdim]
+
+    scale = ADscale_r2r(n, d, dims, ndims(x))
+    scale = [scale; scale[end-1:-1:2]] # the other order of the FFTW HC format
+
+    return y, function(Δ)
+        x̄ = (P \ (Δ ./ scale)) .* d
+        return (nothing, x̄)
+    end
+end
+
+Zygote.@adjoint function
+*(P::FFTW.r2rFFTWPlan{<:Number,(1,)}, x::AbstractArray) where {U,T,R,S,V,W}
+    y = P*x
+
+    dims = tuple(P.region...)
+    halfdim = first(dims)
+    n = Int(floor(P.sz[halfdim]/2)) + 1
+    d = P.osz[halfdim]
+    invN = AbstractFFTs.normalization(arr, dims)
+
+    twoinvN = 2 * invN
+    scale = reshape(
+        [i == 1 || (i == n && 2 * (i - 1) == d) ? invN : twoinvN for i in 1:n],
+        ntuple(i -> i == first(dims) ? n : 1, Val(ndims(arr))),
+    )
+    scale = [scale; scale[end-1:-1:2]]
+
+    return y, function(Δ)
+        x̄ = (scale .* (P \ real.(Δ)))
+        return (nothing, x̄)
+    end
+end
+
 
 # adapted from chainrule for rfft
 @eval function ChainRulesCore.rrule(::typeof(*),P::cur2rPlan{$FORWARD,U,T,R,S,V,W}, x::AbstractArray{<:Real}) where {U,T,R,S,V,W}
@@ -114,11 +174,13 @@ end
 
      project_x = ChainRulesCore.ProjectTo(x)
      function cur2r_pullback(ȳ)
-         x̄ = project_x(((P \ ChainRulesCore.unthunk(ȳ)) ./ scale).*d) # instead of brfft, d removes the normalization of the irfft
+         x̄ = project_x((P \ (ChainRulesCore.unthunk(ȳ) ./ scale)).*d) # instead of brfft, d removes the normalization of the irfft
          return ChainRulesCore.NoTangent(), ChainRulesCore.NoTangent(), x̄
      end
      return y, cur2r_pullback
  end
+
+
 
 # adapted from chainrule for irfft
 @eval function ChainRulesCore.rrule(::typeof(*),P::cur2rPlan{$BACKWARD,U,T,R,S,V,W}, x::AbstractArray) where {U,T,R,S,V,W}
