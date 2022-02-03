@@ -129,7 +129,7 @@ Zygote.@adjoint function *(P::FFTW.r2rFFTWPlan{<:Number,(0,)}, x::AbstractArray{
 
     dims = tuple(P.region...)
     halfdim = first(dims)
-    n = AbstractFFTs.rfft_output_size(P.osz,P.region)
+    n = AbstractFFTs.rfft_output_size(P.osz,P.region)[halfdim]
     d = P.sz[halfdim]
 
     scale = ADscale_r2r(n, d, dims, ndims(x))
