@@ -39,7 +39,7 @@ end
 function ADscale_r2r(n, d, dims, N_dims)
     reshape(
         [i == 1 || (i == n && 2 * (i - 1) == d) ? 1 : 2 for i in 1:n],
-        ntuple(i -> i == first(dims) ? n : 1, Val(ndims(arr))),
+        ntuple(i -> i == first(dims) ? n : 1, Val(N_dims)),
     )
     return scale
 end
