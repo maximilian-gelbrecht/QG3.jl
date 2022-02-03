@@ -139,7 +139,7 @@ Zygote.@adjoint function *(P::FFTW.r2rFFTWPlan{<:Number,(0,)}, x::AbstractArray{
     scale = [scale; scale[end-1:-1:2]] # the other order of the FFTW HC format
 
     return y, function(Δ)
-        x̄ = (P \ (Δ ./ scale)) .* d
+        x̄ = (P \ (Δ ./ scale))
         return (nothing, x̄)
     end
 end
