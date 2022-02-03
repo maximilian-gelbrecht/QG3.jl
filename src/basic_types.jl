@@ -215,7 +215,7 @@ function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
             iFT = plan_cuir2r(FT*(A_real[1,:,:]), p.N_lons, 2)
 
             FT_3d = plan_cur2r(A_real, 3)
-            iFT_3d = plan_cuir2r(FT*A_real, p.N_lons, 3)
+            iFT_3d = plan_cuir2r(FT_3d*A_real, p.N_lons, 3)
 
             truncate_array = nothing
         else
