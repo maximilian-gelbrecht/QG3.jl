@@ -29,7 +29,7 @@ function plan_cur2r(arr::AbstractArray, dims=1)
     d = size(arr, halfdim)
     n = size(plan * arr, halfdim)
     scale = ADscale_r2r(n, d, dims, ndims(arr))
-    scale = [scale; scale] # double cause it's r2r in the format given be to_complex
+    scale = CuArray(eltype(arr),[scale; scale]) # double cause it's r2r in the format given be to_complex
 
     return plan_cur2r(plan, dims, d, n, scale)
 end
@@ -62,7 +62,7 @@ function plan_cuir2r(arr::AbstractArray{T,S}, d::Int, dims=1) where {T,S}
         [i == 1 || (i == n && 2 * (i - 1) == d) ? invN : twoinvN for i in 1:n],
         ntuple(i -> i == first(dims) ? n : 1, Val(ndims(arr))),
     )
-    scale = [scale; scale]
+    scale = CuArray(eltype(arr),[scale; scale])
 
     plan = CUDA.CUFFT.plan_irfft(arr, d, dims)
     plan.pinv = CUDA.CUFFT.plan_inv(plan)
