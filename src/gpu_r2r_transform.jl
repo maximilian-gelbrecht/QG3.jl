@@ -37,7 +37,7 @@ end
 @eval plan_cur2r(plan::AbstractFFTs.Plan{T}, region, d::Integer, n::Integer, scale) where {T} = cur2rPlan{$FORWARD,T,typeof(plan),typeof(region),typeof(d),typeof(n),typeof(scale)}(plan, region, d, n, scale)
 
 function ADscale_r2r(n, d, dims, N_dims)
-    reshape(
+    scale = reshape(
         [i == 1 || (i == n && 2 * (i - 1) == d) ? 1 : 2 for i in 1:n],
         ntuple(i -> i == first(dims) ? n : 1, Val(N_dims)),
     )
