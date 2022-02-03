@@ -157,7 +157,7 @@ Zygote.@adjoint function
     twoinvN = 2 * invN
     scale = reshape(
         [i == 1 || (i == n && 2 * (i - 1) == d) ? invN : twoinvN for i in 1:n],
-        ntuple(i -> i == first(dims) ? n : 1, Val(ndims(arr))),
+        ntuple(i -> i == first(dims) ? n : 1, Val(ndims(y))),
     )
     scale = [scale; scale[end-1:-1:2]]
 
