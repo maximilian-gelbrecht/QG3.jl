@@ -20,7 +20,7 @@ mutable struct cur2rPlan{F,U,T,R,S,V,W} <: AbstractFFTs.Plan{U}
     ADscale::W # used for reverse mode AD
 end
 
-function plan_cur2r(arr::AbstractArray, dims=1)
+function plan_cur2r(arr::AbstractArray{T,N}, dims=1) where {T,N}
     plan = CUDA.CUFFT.plan_rfft(arr, dims)
     plan.pinv = CUDA.CUFFT.plan_inv(plan)
 
@@ -29,7 +29,7 @@ function plan_cur2r(arr::AbstractArray, dims=1)
     d = size(arr, halfdim)
     n = size(plan * arr, halfdim)
     scale = ADscale_r2r(n, d, dims, ndims(arr))
-    scale = CuArray(eltype(arr),[scale; scale]) # double cause it's r2r in the format given be to_complex
+    scale = CuArray(T.([scale; scale])) # double cause it's r2r in the format given be to_complex
 
     return plan_cur2r(plan, dims, d, n, scale)
 end
@@ -62,7 +62,7 @@ function plan_cuir2r(arr::AbstractArray{T,S}, d::Int, dims=1) where {T,S}
         [i == 1 || (i == n && 2 * (i - 1) == d) ? invN : twoinvN for i in 1:n],
         ntuple(i -> i == first(dims) ? n : 1, Val(ndims(arr))),
     )
-    scale = CuArray(eltype(arr),[scale; scale])
+    scale = CuArray(T.([scale; scale]))
 
     plan = CUDA.CUFFT.plan_irfft(arr, d, dims)
     plan.pinv = CUDA.CUFFT.plan_inv(plan)
