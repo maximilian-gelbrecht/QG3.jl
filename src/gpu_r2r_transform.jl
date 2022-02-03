@@ -139,7 +139,7 @@ Zygote.@adjoint function *(P::FFTW.r2rFFTWPlan{<:Number,(0,)}, x::AbstractArray{
     scale = [scale; scale[end-1:-1:2]] # the other order of the FFTW HC format
 
     return y, function(Δ)
-        x̄ = (P \ (Δ ./ scale))
+        x̄ = (P \ (Δ ./ scale)) .* d  # the P.pinv plan for r2r is a scaled plan
         return (nothing, x̄)
     end
 end
@@ -162,7 +162,7 @@ Zygote.@adjoint function
     scale = [scale; scale[end-1:-1:2]]
 
     return y, function(Δ)
-        x̄ = (scale .* (P \ real.(Δ)))
+        x̄ = (scale .* (P \ real.(Δ))) ./ d # the P.pinv plan for r2r is a scaled plan
         return (nothing, x̄)
     end
 end
