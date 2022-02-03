@@ -60,7 +60,7 @@ function plan_cuir2r(arr::AbstractArray{T,S}, d::Int, dims=1) where {T,S}
     plan = CUDA.CUFFT.plan_irfft(arr_complex, d, dims)
     plan.pinv = CUDA.CUFFT.plan_inv(plan)
 
-    invN = AbstractFFTs.normalization(real(eltype(arr)), plan.osz, plan.region)
+    invN = AbstractFFTs.normalization(real(eltype(arr)), plan.p.osz, plan.p.region) # its a scaled plan
 
     twoinvN = 2 * invN
     scale = reshape(
