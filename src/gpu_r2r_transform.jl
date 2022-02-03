@@ -46,16 +46,21 @@ end
 
 # input in arr in real domain
 function plan_cuir2r(arr::AbstractArray{T,S}, d::Int, dims=1) where {T,S}
+
     arr_size = [size(arr)...]
     halfdim = first(dims)
     n = Int(arr_size[halfdim]/2)
-    invN = AbstractFFTs.normalization(arr, dims)
 
     if !(T <: Complex)
-      arr_size[dims] = n
-      arr_size = Tuple(arr_size)
-      arr = CUDA.zeros(Complex{T}, arr_size...)
+        arr_size[dims] = n
+        arr_size = Tuple(arr_size)
+        arr_complex = CUDA.zeros(Complex{T}, arr_size...)
     end
+
+    plan = CUDA.CUFFT.plan_irfft(arr_complex, d, dims)
+    plan.pinv = CUDA.CUFFT.plan_inv(plan)
+
+    invN = AbstractFFTs.normalization(real(eltype(arr)), plan.osz, plan.region)
 
     twoinvN = 2 * invN
     scale = reshape(
@@ -64,8 +69,6 @@ function plan_cuir2r(arr::AbstractArray{T,S}, d::Int, dims=1) where {T,S}
     )
     scale = CuArray(T.([scale; scale]))
 
-    plan = CUDA.CUFFT.plan_irfft(arr, d, dims)
-    plan.pinv = CUDA.CUFFT.plan_inv(plan)
     return plan_cuir2r(plan, dims, d, n, scale)
 end
 
@@ -149,7 +152,7 @@ Zygote.@adjoint function
     halfdim = first(dims)
     n = Int(floor(P.sz[halfdim]/2)) + 1
     d = P.osz[halfdim]
-    invN = AbstractFFTs.normalization(arr, dims)
+    invN = AbstractFFTs.normalization(y, dims)
 
     twoinvN = 2 * invN
     scale = reshape(
