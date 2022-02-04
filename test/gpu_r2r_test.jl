@@ -18,7 +18,7 @@ if CUDA.functional()
     W3 = CUDA.rand(10,5,100);
 
     fft_plan = plan_cur2r(A, 1)
-    ifft_plan = plan_cuir2r(A 1)
+    ifft_plan = plan_cuir2r(fft_plan * A, 100, 1)
 
     func(x) = ifft_plan*(fft_plan*(W .* x))
     loss(x,y) = sum(abs2,func(x)-y)

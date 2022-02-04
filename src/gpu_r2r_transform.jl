@@ -29,7 +29,7 @@ function plan_cur2r(arr::AbstractArray{T,N}, dims=1) where {T,N}
     d = size(arr, halfdim)
     n = size(plan * arr, halfdim)
     scale = ADscale_r2r(n, d, dims, ndims(arr))
-    scale = CuArray(T.([scale; scale])) # double cause it's r2r in the format given be to_complex
+    scale = CuArray(T.(cat(scale, scale, dims=halfdim))) # double cause it's r2r in the format given be to_complex
 
     return plan_cur2r(plan, dims, d, n, scale)
 end
@@ -67,7 +67,7 @@ function plan_cuir2r(arr::AbstractArray{T,S}, d::Int, dims=1) where {T,S}
         [i == 1 || (i == n && 2 * (i - 1) == d) ? invN : twoinvN for i in 1:n],
         ntuple(i -> i == first(dims) ? n : 1, Val(ndims(arr))),
     )
-    scale = CuArray(T.([scale; scale]))
+    scale = CuArray(T.(cat(scale, scale, dims=halfdim)))
 
     return plan_cuir2r(plan, dims, d, n, scale)
 end
@@ -106,7 +106,8 @@ end
 @eval Zygote.@adjoint function *(P::cur2rPlan{$FORWARD,U,T,R,S,V,W}, x::AbstractArray{<:Real}) where {U,T,R,S,V,W}
     y = P*x
 
-    scale = P.ADscale
+    scale = P.ADscale # fix scale for multidim case, do proper cat the 1d one is not enough
+
     d = P.d
     return y, function(Δ)
         x̄ = (P \ (Δ ./ scale)) .* d
@@ -136,7 +137,8 @@ Zygote.@adjoint function *(P::FFTW.r2rFFTWPlan{<:Number,(0,)}, x::AbstractArray{
     d = P.sz[halfdim]
 
     scale = ADscale_r2r(n, d, dims, ndims(x))
-    scale = [scale; scale[end-1:-1:2]] # the other order of the FFTW HC format
+    scale = cat(scale, selectdim(scale, halfdim, n-1:-1:2), dims=halfdim)
+     # the other order of the FFTW HC format
 
     return y, function(Δ)
         x̄ = (P \ (Δ ./ scale)) .* d  # the P.pinv plan for r2r is a scaled plan
@@ -159,7 +161,7 @@ Zygote.@adjoint function
         [i == 1 || (i == n && 2 * (i - 1) == d) ? invN : twoinvN for i in 1:n],
         ntuple(i -> i == first(dims) ? n : 1, Val(ndims(y))),
     )
-    scale = [scale; scale[end-1:-1:2]]
+    scale = cat(scale, selectdim(scale, halfdim, n-1:-1:2), dims=halfdim)
 
     return y, function(Δ)
         x̄ = (scale .* (P \ real.(Δ))) ./ d # the P.pinv plan for r2r is a scaled plan
