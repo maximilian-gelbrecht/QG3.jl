@@ -69,3 +69,4 @@ if CUDA.functional()
 else
     println("CUDA not available. No GPU/CPU comparision tested.")
 end
+end
