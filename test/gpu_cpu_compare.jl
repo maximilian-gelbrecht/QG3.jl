@@ -1,5 +1,5 @@
 
-using CUDA, QG3, BenchmarkTools, DifferentialEquations, JLD2,Flux, Zygote, DiffEqFlux
+using CUDA, QG3, BenchmarkTools, DifferentialEquations, JLD2,Flux, Zygote
 
 @testset "Basic GPU/CPU comparision" begin
 
@@ -68,4 +68,5 @@ if CUDA.functional()
 
 else
     println("CUDA not available. No GPU/CPU comparision tested.")
+end
 end
