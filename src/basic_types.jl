@@ -181,10 +181,7 @@ function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
     mm_3d = make3d(mm)
     swap_m_sign_array = [1;vcat([[2*i+1,2*i] for i=1:p.L-1]...)]
 
-    msinθ = togpu(zeros(T, p.N_lats, p.N_lons))
-    for i ∈ 1:p.N_lats
-        msinθ[i,:] .= -sin(p.θ[i])
-    end
+    msinθ = togpu(T.(reshape(-sin.(p.θ),p.N_lats, 1)))
     msinθ_3d = make3d(msinθ)
 
     if gridtype=="regular"
