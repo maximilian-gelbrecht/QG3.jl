@@ -11,13 +11,7 @@
     repeats an array three times to turn it into (3 x size(A,1) x size(A,2)), for the fully matrix version of model.
 """
 function make3d(A::AbstractArray{T,2}) where T<:Number
-    out = zeros(T, 3, size(A,1), size(A,2))
-
-    for i=1:3
-        out[i,:,:] = A
-    end
-
-    togpu(out)
+    togpu(reshape(A,1,size(A,1),size(A,2)))
 end
 
 

@@ -229,14 +229,8 @@ end
 """
 Pre-compute cos(ϕ) (latitude) matrix
 """
-function compute_cosϕ(p::QG3ModelParameters)
-cosϕ = zeros(Float64, p.N_lats, p.N_lons)
-lats = tocpu(p.lats)
-for i=1:p.N_lats
-    cosϕ[i,:] .= cos(lats[i])
-end
-
-return cosϕ
+function compute_cosϕ(p::QG3ModelParameters{T}) where {T}
+    return reshape(T.(cos.(tocpu(p.lats))), p.N_lats, 1)
 end
 
 """

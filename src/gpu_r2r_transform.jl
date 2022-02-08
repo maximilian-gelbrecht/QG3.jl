@@ -44,7 +44,6 @@ function ADscale_r2r(n, d, dims, N_dims)
     return scale
 end
 
-# input in arr in real domain
 function plan_cuir2r(arr::AbstractArray{T,S}, d::Int, dims=1) where {T,S}
 
     arr_size = [size(arr)...]
@@ -184,8 +183,6 @@ end
      end
      return y, cur2r_pullback
  end
-
-
 
 # adapted from chainrule for irfft
 @eval function ChainRulesCore.rrule(::typeof(*),P::cur2rPlan{$BACKWARD,U,T,R,S,V,W}, x::AbstractArray) where {U,T,R,S,V,W}
