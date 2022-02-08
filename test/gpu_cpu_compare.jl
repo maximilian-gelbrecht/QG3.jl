@@ -18,6 +18,7 @@ if CUDA.functional()
     @test QG3.isongpu(qg3p_gpu)
     @test !(QG3.isongpu(qg3p))
 
+    T = eltype(qg3p_gpu)
 
     a = similar(ψ_0)
     a .= 1
@@ -52,13 +53,13 @@ if CUDA.functional()
     RELTOL = 1e-5
     RELTOL_PREDICT = 1e-3
 
-    DT = (2π/144) / 10 # in MM code: 1/144 * 2π
-    t_end = 100.5
+    DT = T((2π/144) / 10) # in MM code: 1/144 * 2π
+    t_end = T(100.5)
 
-    prob_gpu = ODEProblem(QG3.QG3MM_gpu,q_0_gpu,(100.,t_end),[qg3p_gpu, S_gpu])
+    prob_gpu = ODEProblem(QG3.QG3MM_gpu,q_0_gpu,(T(100.),t_end),[qg3p_gpu, S_gpu])
     sol_gpu = @time solve(prob_gpu, Tsit5(), dt=DT, reltol=RELTOL);
 
-    prob = ODEProblem(QG3.QG3MM_gpu,q_0,(100.,t_end),[qg3p, S])
+    prob = ODEProblem(QG3.QG3MM_gpu,q_0,(T(100.),t_end),[qg3p, S])
     sol = @time solve(prob, Tsit5(), dt=DT, reltol=RELTOL);
 
     diff = abs.(QG3.reorder_SH_gpu(sol(t_end),qg3ppars) - sol_gpu(t_end))./sol_gpu(t_end)

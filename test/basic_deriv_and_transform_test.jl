@@ -8,8 +8,8 @@ S, qg3ppars, ψ_0, q_0 = QG3.load_precomputed_data()
 
 qg3p = QG3Model(qg3ppars)
 
-cosθ = similar(qg3p.cosϕ)
-msinθ = similar(qg3p.cosϕ)
+cosθ = zeros(eltype(qg3p),qg3p.p.N_lats, qg3p.p.N_lons)
+msinθ = zeros(eltype(qg3p),qg3p.p.N_lats, qg3p.p.N_lons)
 for i ∈ 1:qg3p.p.N_lats
     cosθ[i,:] .= cos(qg3p.p.θ[i])
     msinθ[i,:] .= -sin(qg3p.p.θ[i])
@@ -35,7 +35,9 @@ cg = transform_grid(cSH_2d, qg3p)
 
 # 3D transforms
 cosθ = QG3.make3d(cosθ)
+cosθ = cat(cosθ, cosθ, cosθ, dims=1)
 msinθ = QG3.make3d(msinθ)
+msinθ = cat(msinθ, msinθ, msinθ, dims=1)
 
 cSH = transform_SH(cosθ, qg3p)
 
