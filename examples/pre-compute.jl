@@ -3,6 +3,10 @@
 using QG3, NetCDF, CFTime, Dates, BenchmarkTools, DifferentialEquations, JLD2
 
 # first we import the data (streamfunction), land sea mask, orography etc
+
+# precision type (use Float32 or Float64)
+T = Float32
+
 begin
         DIR = "data/"
         NAME = "ERA5-sf-t21q.nc"
@@ -12,31 +16,31 @@ begin
         LATNAME = "lat"
         LONNAME = "lon"
 
-        lats = deg2rad.(Float64.(ncread(string(DIR,NAME),LATNAME)))
+        lats = deg2rad.(T.(ncread(string(DIR,NAME),LATNAME)))
         lat_inds = 1:size(lats,1)
 
         ψ = ncread(string(DIR,NAME),"atmosphere_horizontal_streamfunction")[:,:,:,:]
 
         lvl = ncread(string(DIR,NAME),"level")
-        lats = deg2rad.(Float64.(ncread(string(DIR,NAME),LATNAME)))[lat_inds]
-        lons = deg2rad.(Float64.(ncread(string(DIR,NAME),LONNAME)))
+        lats = deg2rad.(T.(ncread(string(DIR,NAME),LATNAME)))[lat_inds]
+        lons = deg2rad.(T.(ncread(string(DIR,NAME),LONNAME)))
 
         times = CFTime.timedecode( ncread(string(DIR,NAME),"time"),ncgetatt(string(DIR,NAME),"time","units"))
 
         summer_ind = [month(t) ∈ [6,7,8] for t ∈ times]
         winter_ind = [month(t) ∈ [12,1,2] for t ∈ times]
 
-        LS = Float64.(permutedims(ncread(string(DIR,LSNAME),"var172")[:,:,1],[2,1]))[lat_inds,:]
+        LS = T.(permutedims(ncread(string(DIR,LSNAME),"var172")[:,:,1],[2,1]))[lat_inds,:]
         # Land see mask, on the same grid as lats and lons
 
-        h = (Float64.(permutedims(ncread(string(DIR,ORONAME),"z")[:,:,1],[2,1]))[lat_inds,:] .* ncgetatt(string(DIR,ORONAME), "z", "scale_factor")) .+ ncgetatt(string(DIR,ORONAME),"z","add_offset")
+        h = (T.(permutedims(ncread(string(DIR,ORONAME),"z")[:,:,1],[2,1]))[lat_inds,:] .* T.(ncgetatt(string(DIR,ORONAME), "z", "scale_factor"))) .+ T.(ncgetatt(string(DIR,ORONAME),"z","add_offset"))
         # orography, array on the same grid as lats and lons
 
         LEVELS = [200, 500, 800]
 
         ψ = togpu(ψ[:,:,level_index(LEVELS,lvl),:])
         ψ = permutedims(ψ, [3,2,1,4]) # level, lat, lon,
-        ψ = Float64.(ψ[:,lat_inds,:,:])
+        ψ = T.(ψ[:,lat_inds,:,:])
 
         gridtype="gaussian"
 end

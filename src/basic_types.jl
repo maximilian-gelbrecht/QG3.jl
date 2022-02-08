@@ -1,4 +1,4 @@
-import Base.show
+import Base.show, Base.eltype
 
 """
     QG3ModelParameters{T}
@@ -77,14 +77,14 @@ struct QG3ModelParameters{T}
     q_unit::T
 end
 
-function QG3ModelParameters(L::Int, lats::AbstractArray{T,1}, lons::AbstractArray{T,1}, LS::AbstractArray{T,2}, h::AbstractArray{T,2}, R1i::T=82.83600204081633, R2i::T=200.44267160493825, H0::T=9000., τRi::T=0.0031830988618379067, τEi::T=0.026525823848649224, τHi::T=0.039788735772973836, α1::T=0.5, α2::T=0.5, a::T=1., Ω::T=1/2, gridtype::String="gaussian", time_unit::T=0.07957747154594767, distance_unit::T=6.371e6) where T<:Real
+function QG3ModelParameters(L::Int, lats::AbstractArray{T,1}, lons::AbstractArray{T,1}, LS::AbstractArray{T,2}, h::AbstractArray{T,2}, R1i::Number=82.83600204081633, R2i::Number=200.44267160493825, H0::Number=9000., τRi::Number=0.0031830988618379067, τEi::Number=0.026525823848649224, τHi::Number=0.039788735772973836, α1::Number=0.5, α2::Number=0.5, a::Number=1., Ω::Number=1/2, gridtype::String="gaussian", time_unit::Number=0.07957747154594767, distance_unit::Number=6.371e6) where T<:Real
 
     N_lats = size(lats,1)
 
     M = 2*L - 1
     N_lons = size(lons,1)
 
-    colats = lat_to_colat(lats)
+    colats = lat_to_colat.(lats)
     μ = sin.(lats)
 
     λmax = (length(lats)-1) * ((length(lats)-1) +1) # largest eigenvalue of the laplacian of the grid (in spherical harmonics)
@@ -93,7 +93,7 @@ function QG3ModelParameters(L::Int, lats::AbstractArray{T,1}, lons::AbstractArra
     ψ_unit = (distance_unit*distance_unit)/(24*60*60*time_unit)
     q_unit = 1/(60*60*24*time_unit)
 
-    return QG3ModelParameters(L, M, N_lats, N_lons, lats, colats, μ, lons, LS, h, R1i, R2i, H0, τRi, τEi, cH, α1, α2, a, Ω, gridtype, time_unit, distance_unit, ψ_unit, q_unit)
+    return QG3ModelParameters(L, M, N_lats, N_lons, lats, colats, μ, lons, LS, h, T(R1i), T(R2i), T(H0), T(τRi), T(τEi), T(cH), T(α1), T(α2), T(a), T(Ω), gridtype, T(time_unit), T(distance_unit), T(ψ_unit), T(q_unit))
 end
 
 togpu(p::QG3ModelParameters) = QG3ModelParameters(p.L, p.M, p.N_lats, p.N_lons, togpu(p.lats), togpu(p.θ), togpu(p.μ), togpu(p.lons), togpu(p.LS), togpu(p.h), p.R1i, p.R2i, p.H0, p.τRi, p.τEi, p.cH, p.α1, p.α2, p.a, p.Ω, p.gridtype, p.time_unit, p.distance_unit, p.ψ_unit, p.q_unit)
@@ -333,4 +333,6 @@ show(io::IO, m::QG3Model{T}) where {T} = print(io, "Pre-computed QG3Model{",T,"}
 
 Determines if the model was pre-computed to be used on GPU.
 """
-isongpu(m::QG3Model{T}) where T<:Number = typeof(m.g) <: AbstractGridType{T, true}
+isongpu(m::QG3Model{T}) where {T} = typeof(m.g) <: AbstractGridType{T, true}
+
+eltype(m::QG3Model{T}) where {T} = T

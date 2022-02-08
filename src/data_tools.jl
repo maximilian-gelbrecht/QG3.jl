@@ -1,4 +1,4 @@
-lat_to_colat(lat) = π/2 .- lat
+lat_to_colat(lat::T) where {T} = T(π/2) - lat
 
 """
     level_index(strings,lvls)
