@@ -100,7 +100,7 @@ togpu(p::QG3ModelParameters) = QG3ModelParameters(p.L, p.M, p.N_lats, p.N_lons, 
 
 tocpu(p::QG3ModelParameters) = QG3ModelParameters(p.L, p.M, p.N_lats, p.N_lons, tocpu(p.lats), tocpu(p.θ), tocpu(p.μ), tocpu(p.lons), tocpu(p.LS), tocpu(p.h), p.R1i, p.R2i, p.H0, p.τRi, p.τEi, p.cH, p.α1, p.α2, p.a, p.Ω, p.gridtype, p.time_unit, p.distance_unit, p.ψ_unit, p.q_unit)
 
-show(io::IO, p::QG3ModelParameters{T}) where {T} = print(io," QG3 Parameters with N_lats=",p.N_lats," N_lons=",p.N_lons," L_max=",p.L-1)
+show(io::IO, p::QG3ModelParameters{T}) where {T} = print(io," QG3ModelParameters{",T,"} with N_lats=",p.N_lats," N_lons=",p.N_lons," L_max=",p.L-1)
 
 """
     AbstractGridType{T, onGPU}
