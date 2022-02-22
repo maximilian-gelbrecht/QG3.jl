@@ -80,3 +80,36 @@ function load_precomputed_data()
 
     return S, qg3ppars, ψ_0, q_0
 end
+
+"""
+    zeros_SH(p::QG3Model{T})
+
+Returns a zero array in the dimensions of the SH. 
+"""
+function zeros_SH(p::QG3Model{T}) where {T}
+    if isongpu(p)
+        return CUDA.CuArray(zeros_SH(p.p))
+    else 
+        return zeros_SH(p.p)
+    end 
+end
+zeros_SH(p::QG3ModelParameters{T}) where {T} = zeros(T, 3, p.L, p.M)
+
+"""
+    zeros_Grid(p::QG3Model{T})
+
+Returns a zero array in the dimensions of the grid. 
+"""
+function zeros_Grid(p::QG3Model{T}) where {T}
+    if isongpu(p)
+        return CUDA.CuArray(zeros_Grid(p.p))
+    else 
+        return zeros_Grid(p.p)
+    end 
+end
+zeros_Grid(p::QG3ModelParameters{T}) where {T} = zeros(T, 3, p.N_lats, p.N_lons)
+
+
+
+
+

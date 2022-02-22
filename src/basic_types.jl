@@ -172,10 +172,10 @@ show(io::IO, g::GaussianGrid{T, false}) where {T} = print(io," Gaussian Grid on 
 
 Convience constructor for the [`AbstractGridType`](@ref) based on the parameters set in `p`.
 """
-function grid(p::QG3ModelParameters{T}, gridtype::String) where T<:Number
+function grid(p::QG3ModelParameters{T}, gridtype::String, N_level::Int=3) where T<:Number
 
     dPμdμ, __, P = compute_P(p)
-    A_real = togpu(rand(T,3, p.N_lats, p.N_lons))
+    A_real = togpu(rand(T, N_level, p.N_lats, p.N_lons))
 
     mm = compute_mmMatrix(p)
     mm_3d = make3d(mm)
