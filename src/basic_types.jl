@@ -177,7 +177,7 @@ function grid(p::QG3ModelParameters{T}, gridtype::String, N_level::Int=3) where 
     dPμdμ, __, P = compute_P(p)
     A_real = togpu(rand(T, N_level, p.N_lats, p.N_lons))
 
-    mm = compute_mmMatrix(p)
+    mm = mMatrix(p)
     mm_3d = make3d(mm)
     swap_m_sign_array = [1;vcat([[2*i+1,2*i] for i=1:p.L-1]...)]
 

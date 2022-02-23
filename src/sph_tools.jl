@@ -149,7 +149,7 @@ lMatrix(p::QG3Model) = lMatrix(p.p)
 """
 Pre-compute a matrix with (m) values of the SH matrix format of FastTransforms.jl, used for zonal derivative
 """
-function compute_mmMatrix(L::Integer, M::Integer) where T<:Number
+function mMatrix(L::Integer, M::Integer) where T<:Number
     mmMat = zeros(L,M)
     for m ∈ -(L-1):(L-1)
         for il ∈ 1:(L - abs(m))
@@ -162,8 +162,8 @@ function compute_mmMatrix(L::Integer, M::Integer) where T<:Number
     end
     mmMat
 end
-compute_mmMatrix(p::QG3ModelParameters{T}) where T<:Number = T.(compute_mmMatrix(p.L,p.M))
-compute_mmMatrix(p::QG3Model) = compute_mmMatrix(p.p)
+mMatrix(p::QG3ModelParameters{T}) where T<:Number = T.(mMatrix(p.L,p.M))
+mMatrix(p::QG3Model) = mMatrix(p.p)
 
 
 
@@ -172,7 +172,7 @@ compute_mmMatrix(p::QG3Model) = compute_mmMatrix(p.p)
 # thus even l+m symmetric, odd l+m anti-symmetric
 function symmetrize_equator!(ψ::AbstractArray{T,2}, p::QG3ModelParameters{T}) where T<:Number
 
-    m = compute_mmMatrix(p)
+    m = mMatrix(p)
     l = lMatrix(p)
 
     ψ[mod.(l + abs.(m), 2) .== 0] .= T(0)
