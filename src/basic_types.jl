@@ -276,6 +276,7 @@ struct QG3Model{T} <: AbstractQG3Model{T}
     cosϕ::AbstractArray{T,2}
     acosϕi::AbstractArray{T,2}
     Δ::AbstractArray{T,2}
+    Δ_3d
     Tψq
     Tqψ
     f
@@ -323,7 +324,7 @@ function QG3Model(p::QG3ModelParameters)
     ∂k∂λ = transform_grid(SHtoSH_dφ(k_SH, g), p, g) ./ (cosϕ .^ 2)
     ∂k∂ϕ = SHtoGrid_dϕ(k_SH, p, g)
 
-    return QG3Model(p, g, k, TRcoeffs, TR_matrix, cosϕ, acosϕi, Δ, Tψq, Tqψ, f, f_J3, ∇8, make3d(∇8), ∂k∂ϕ, ∂k∂μ, ∂k∂λ)
+    return QG3Model(p, g, k, TRcoeffs, TR_matrix, cosϕ, acosϕi, Δ, make3d(Δ), Tψq, Tqψ, f, f_J3, ∇8, make3d(∇8), ∂k∂ϕ, ∂k∂μ, ∂k∂λ)
 end
 
 show(io::IO, m::QG3Model{T}) where {T} = print(io, "Pre-computed QG3Model{",T,"} with ",m.p, " on a",m.g)
