@@ -260,8 +260,8 @@ Holds all parameter and grid information, plus additional pre-computed fields th
 * `Tqψ``inverse of Tψq   ψ = Tqψ*(q - F)
 * `f` modified coriolis vector used in transforming stream function to vorticity
 * `J_f3` coriolis contribution to Jacobian at 850hPa
-* `∇8` 8-th order gradient for horizonatal diffusion
-* `∇8_3d` 8-th order gradient for horizonatal diffusion for 3d field
+* `cH∇8` cH * 8-th order gradient for horizonatal diffusion
+* `cH∇8_3d` cH * 8-th order gradient for horizonatal diffusion for 3d field
 * `∂k∂ϕ` derivates of drag coefficients, pre computed for Ekman dissipation
 * `∂k∂μ`
 * `∂k∂λ` includes 1/cos^2ϕ (for Ekman dissipiation computation)
@@ -281,8 +281,8 @@ struct QG3Model{T} <: AbstractQG3Model{T}
     Tqψ
     f
     f_J3
-    ∇8
-    ∇8_3d
+    cH∇8
+    cH∇8_3d
     ∂k∂ϕ
     ∂k∂μ
     ∂k∂λ
@@ -317,7 +317,8 @@ function QG3Model(p::QG3ModelParameters)
     f_J3 = togpu(compute_f_J3(p, f))
 
     ∇8 = cuda_used[] ? reorder_SH_gpu(compute_∇8(p), p) : compute_∇8(p)
-
+    ∇8 *= p.cH
+    
     k_SH = transform_SH(k, p, g)
 
     ∂k∂μ = SHtoGrid_dμ(k_SH, p, g)

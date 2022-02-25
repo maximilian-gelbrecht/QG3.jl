@@ -87,9 +87,9 @@ TR12(m::QG3Model{T}, ψ::AbstractArray{T,3}) where T<:Number = m.TRcoeffs[1,:,:]
 TR23(m::QG3Model{T}, ψ::AbstractArray{T,3}) where T<:Number = m.TRcoeffs[2,:,:] .* (ψ[2,:,:] - ψ[3,:,:])
 
 """
-Horizontal diffusion, q' is anomolous pv (without coriolis) 2D Fields
+Horizontal diffusion, q' is anomolous pv (without coriolis) 2D Fields m.cH∇8 = m.p.cH * m.∇8
 """
-H(qprime::AbstractArray{T,3}, i::Int, m::QG3Model{T}) where T<: Number = m.p.cH .* (m.∇8 .* qprime[i,:,:])
+H(qprime::AbstractArray{T,3}, i::Int, m::QG3Model{T}) where T<: Number = m.cH∇8 .* qprime[i,:,:]
 
 u(ψ, m) = -m.p.a^(-1) .* SHtoGrid_dϕ(ψ, m)
 v(ψ, m) = m.acosϕi .* SHtoGrid_dλ(ψ, m)

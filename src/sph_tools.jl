@@ -131,9 +131,11 @@ end
 change_msign(A::AbstractArray{T,3}, i::Integer, swap_array::AbstractArray{Int,1}) where T<:Number = @inbounds view(A,i,:,swap_array)
 
 """
-Return l-Matrix of SH coefficients in convention of FastTransforms.jl
+    lMatrix(L, M; GPU=nothing)
+
+Return l-Matrix of SH coefficients in convention of FastTransforms.jl. 
 """
-function lMatrix(L, M)
+function lMatrix(L::Integer, M::Integer)
     l = zeros(Int, L, M)
 
     for m ∈ -(L-1):(L-1)
@@ -147,7 +149,11 @@ lMatrix(p::QG3ModelParameters) = lMatrix(p.L, p.M)
 lMatrix(p::QG3Model) = lMatrix(p.p)
 
 """
+    mMatrix(L::Integer, M::Integer)
+
 Pre-compute a matrix with (m) values of the SH matrix format of FastTransforms.jl, used for zonal derivative
+
+Kwarg 'GPU', if given, overrides the automatic detection of wheather or not a GPU is avaible. 
 """
 function mMatrix(L::Integer, M::Integer) where T<:Number
     mmMat = zeros(L,M)
