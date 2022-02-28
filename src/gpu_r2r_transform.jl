@@ -1,5 +1,4 @@
 # Currently on GPU there exist no r2r FFT plan. This in itself would not be a problem. However, it is a problem for the AD with Zygote which does not work nicely with complex arrays
-# Currently on GPU there exist no r2r FFT plan. This in itself would not be a problem. However, it is a problem for the AD with Zygote which does not work nicely with complex arrays
 
 using LinearAlgebra
 import Base: *, \, inv, size, ndims, length, show, summary
