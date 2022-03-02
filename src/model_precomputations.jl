@@ -164,8 +164,6 @@ end
 """
 Pre-compute a matrix with with the Coriolis factor
 """
-compute_coriolis_vector_SH(p::QG3ModelParameters, SHPlan, FTPlan, P) = transform_SH(compute_coriolis_vector_grid(p), SHPlan, FTPlan, P)
-
 function compute_coriolis_vector_grid(p::QG3ModelParameters{T}) where T<:Number
     f = zeros(T, 3 , p.N_lats, p.N_lons)
     lats = tocpu(p.lats)
@@ -191,7 +189,6 @@ function compute_f_J3(p::QG3ModelParameters{T}, f::AbstractArray{T,3}) where T<:
 
     return f_J3
 end
-compute_f_J3(p::QG3ModelParameters) = compute_f_J3(p, compute_coriolis_vector_SH(p))
 
 """
 Pre-compute the Laplacian in Spherical Harmonics, follows the matrix convention of FastTransforms.jl

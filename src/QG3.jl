@@ -38,7 +38,24 @@ using CUDAKernels, KernelAbstractions
 togpu(x::AbstractArray) = cuda_used[] ? CuArray(x) : x
 tocpu(x) = cuda_used[] ? Array(x) : x
 
+abstract type AbstractQG3Model{T} end
+
+"""
+    AbstractGridType{T, onGPU}
+
+Abstract type for grids. The grids save information about the transform from the spatial to spectral grid, e.g. pre-computed Legendre Polynomials
+
+Required fields: 
+
+* `GtoSH`
+* `SHtoG`
+* `dμ`
+* `dλ`
+"""
+abstract type AbstractGridType{T, onGPU} end
+
 include("basic_types.jl")
+include("transforms.jl")
 include("sph_tools.jl")
 include("data_tools.jl")
 include("derivatives.jl")

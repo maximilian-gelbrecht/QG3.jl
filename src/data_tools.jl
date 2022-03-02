@@ -1,5 +1,16 @@
 lat_to_colat(lat::T) where {T} = T(π/2) - lat
 
+
+"""
+    make3d(A::AbstractArray{T,2})
+
+    repeats an array three times to turn it into (3 x size(A,1) x size(A,2)), for the fully matrix version of model.
+"""
+function make3d(A::AbstractArray{T,2}) where T<:Number
+    togpu(reshape(A,1,size(A,1),size(A,2)))
+end
+
+
 """
     level_index(strings,lvls)
 

@@ -43,7 +43,7 @@ B = g[a]
 
 # here we test one of the extra ad rules that are given so that AD does not use scalar indexing on GPU, we do that be comparing the naive Zygote gradient with the custom gradient that is implemented in the library. On CPU both work, on GPU only the custom gradient will work
 
-swap_array = qg3p.g.swap_m_sign_array
+swap_array = qg3p.g.dλ.swap_m_sign_array
 
 swap_sign(A::AbstractArray{T,2},swap) where {T} = @inbounds view(A,:,swap)
 

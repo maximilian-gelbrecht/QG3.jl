@@ -75,7 +75,6 @@ sol = @time solve(prob, Tsit5(), dt=DT)
 
 # PLOT OPtiON
 using Plots
-pyplot()
 
 PLOT = true
 if PLOT
