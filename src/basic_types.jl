@@ -103,65 +103,22 @@ tocpu(p::QG3ModelParameters) = QG3ModelParameters(p.L, p.M, p.N_lats, p.N_lons, 
 show(io::IO, p::QG3ModelParameters{T}) where {T} = print(io," QG3ModelParameters{",T,"} with N_lats=",p.N_lats," N_lons=",p.N_lons," L_max=",p.L-1)
 
 """
-    AbstractGridType{T, onGPU}
-
-Abstract type for grids. The grids save information about the transform from the spatial to spectral grid, e.g. pre-computed Legendre Polynomials
-"""
-abstract type AbstractGridType{T, onGPU} end
-
-struct RegularGrid{T, onGPU} <: AbstractGridType{T, onGPU}
-    SH # plan for sph2fourier transform "\" is transform to SH and "*" the inverse transform
-    FT # plan for bivariate fourier transform
-    FTinv  # plan for inverse bivariate fourier transform
-    ∂_iFT # for derivative
-    P_spurious_modes # mask, used to zero spurious SH modes
-    CS::AbstractArray{T,2}
-    dPμdμ::AbstractArray{T,3}
-    msinθ::AbstractArray{T,2}
-    set_spurious_zero::Bool # set spurious modes zero
-    mm::AbstractArray{T,2} # (-m) SH number matrix, used for zonal derivative
-    mm_3d::AbstractArray{T,3} # (-m) SH number matrix, used for zonal derivative for 3d fields
-    swap_m_sign_array # indexing array, used to swap the sign of the m SH number, used for zonal derivative
-end
-
-show(io::IO, g::RegularGrid) = print(io, " Regular Grid (FastTransforms.jl)")
-
-
-"""
      GaussianGrid{T, onGPU} <: AbstractGridType{T, onGPU}
 
-Struct for Gaussian grid and its transforms.
+Struct for the transforms and derivates of a Gaussian Grid
 
 # Fields:
 
-* `P::AbstractArray{T,3}` ass. Legendre Polynomials
-* `Pw::AbstractArray{T,3}` ass. Legendre Polynomials * Gaussian weights
-* `FT` Fourier transform plan
-* `iFT` inverse Fourier transform plan
-* `FT_3d` Fourier transform plan for fully matrix version with lvl as first dimension
-* `iFT_3d` inverse Fourier transform plan for fully matrix version with lvl as first dimension
-* `truncate_array` truncatation indices
-* `dPμdμ::AbstractArray{T,3}` derivative of ass. Legendre Polynomials
-* `msinθ::AbstractArray{T,2}` -sin(θ) for dervative with repsect to θ and ϕ
-* `mm::AbstractArray{T,2}` (-m) SH number matrix, used for zonal derivative
-* `mm_3d::AbstractArray{T,3}` (-m) SH number matrix, used for zonal derivative for 3d fields
-* `swap_m_sign_array` indexing array, used to swap the sign of the m SH number, used for zonal derivative
-
+* `GtoSH::GaussianGridtoSHTransform`
+* `SHtoG::GaussianSHtoGridTransform`
+* `dμ::GaussianGrid_dμ`
+* `dλ::Derivative_dλ`
 """
 struct GaussianGrid{T, onGPU} <: AbstractGridType{T, onGPU}
-    P::AbstractArray{T,3}
-    Pw::AbstractArray{T,3}
-    FT
-    iFT
-    FT_3d
-    iFT_3d
-    truncate_array
-    dPμdμ::AbstractArray{T,3}
-    msinθ::AbstractArray{T,2}
-    msinθ_3d::AbstractArray{T,3}
-    mm::AbstractArray{T,2}
-    mm_3d::AbstractArray{T,3}
-    swap_m_sign_array
+    GtoSH
+    SHtoG
+    dμ
+    dλ
 end
 
 show(io::IO, g::GaussianGrid{T, true}) where {T} = print(io," Gaussian Grid on GPU")
@@ -174,72 +131,23 @@ Convience constructor for the [`AbstractGridType`](@ref) based on the parameters
 """
 function grid(p::QG3ModelParameters{T}, gridtype::String, N_level::Int=3) where T<:Number
 
-    dPμdμ, __, P = compute_P(p)
-    A_real = togpu(rand(T, N_level, p.N_lats, p.N_lons))
-
-    mm = mMatrix(p)
-    mm_3d = make3d(mm)
-    swap_m_sign_array = [1;vcat([[2*i+1,2*i] for i=1:p.L-1]...)]
-
-    msinθ = togpu(T.(reshape(-sin.(p.θ),p.N_lats, 1)))
-    msinθ_3d = make3d(msinθ)
-
     if gridtype=="regular"
-        SH = plan_sph2fourier(T, p.N_lats)
-        FT = plan_sph_analysis(T, p.N_lats, p.N_lons)
-        FTinv = plan_sph_synthesis(T, p.N_lats, p.N_lons)
-        ∂_iFT = FFTW.plan_r2r(A_real, FFTW.HC2R, 2)
-
-        P_spurious_modes = togpu(prepare_sph_zero_spurious_modes(p))
-        setzero
-
-        return RegularGrid(SH, FT, FTinv, ∂_iFT, P_spurious_modes, CS, dPμdμ, msinθ, msinθ_3d, true, mm, mm_3d, swap_m_sign_array)
+        
+        error("Not implemented anymore, as aliasing problems couldn't be fixed, there is some code in the old commits of the rep though.")
 
     elseif gridtype=="gaussian"
 
-        Pw = deepcopy(P)
-        Pw = compute_LegendreGauss(p, Pw)
+        GtoSH = GaussianGridtoSHTransform(p, N_level)
+        SHtoG = SHtoGaussianGridTransform(p, N_level)
+        dμ = GaussianGrid_dμ(p, N_level)
+        dλ = Derivative_dλ(p)
 
-        if cuda_used[]
-
-            mm = reorder_SH_gpu(mm, p)
-            mm_3d = reorder_SH_gpu(mm_3d, p)
-            swap_m_sign_array = [1; Int((p.N_lons)/2)+3 : p.N_lons + 2; 1:Int((p.N_lons)/2)+1;]
-
-            P, Pw, dPμdμ = reorder_SH_gpu(P, p), reorder_SH_gpu(Pw, p), reorder_SH_gpu(dPμdμ, p)
-
-            FT = plan_cur2r(A_real[1,:,:], 2)
-            iFT = plan_cuir2r(FT*(A_real[1,:,:]), p.N_lons, 2)
-
-            FT_3d = plan_cur2r(A_real, 3)
-            iFT_3d = plan_cuir2r(FT_3d*A_real, p.N_lons, 3)
-
-            truncate_array = nothing
-        else
-            FT = FFTW.plan_r2r(A_real[1,:,:], FFTW.R2HC, 2)
-            iFT = FFTW.plan_r2r(A_real[1,:,:], FFTW.HC2R, 2)
-
-            FT_3d = FFTW.plan_r2r(A_real, FFTW.R2HC, 3)
-            iFT_3d = FFTW.plan_r2r(A_real, FFTW.HC2R, 3)
-
-            m_p = 1:p.L
-            m_n = p.N_lons:-1:p.N_lons-(p.L-2)
-
-            truncate_array = [1]
-            for im=1:(p.L-1)
-                push!(truncate_array, m_n[im])
-                push!(truncate_array, m_p[im+1])
-            end
-        end
-
-        return GaussianGrid{T, cuda_used[]}(togpu(P), togpu(Pw), FT, iFT, FT_3d, iFT_3d, truncate_array, togpu(dPμdμ), togpu(msinθ), togpu(msinθ_3d), togpu(mm), togpu(mm_3d), togpu(swap_m_sign_array))
+        return GaussianGrid{T, cuda_used[]}(GtoSH, SHtoG, dμ, dλ)
     else
         error("Unknown gridtype.")
     end
 end
 grid(p::QG3ModelParameters) = grid(p, p.gridtype)
-
-abstract type AbstractQG3Model{T} end
 
 """
     QG3Model{T}
@@ -311,7 +219,7 @@ function QG3Model(p::QG3ModelParameters)
     Tqψ, Tψq = togpu(Tqψ), togpu(Tψq)
 
     TRcoeffs = togpu(compute_TR(p))
-    f = transform_SH(togpu(compute_coriolis_vector_grid(p)), p, g)
+    f = transform_SH(togpu(compute_coriolis_vector_grid(p)), g)
 
     TR_matrix = togpu(compute_batched_TR_matrix(p))
     f_J3 = togpu(compute_f_J3(p, f))
@@ -319,11 +227,11 @@ function QG3Model(p::QG3ModelParameters)
     ∇8 = cuda_used[] ? reorder_SH_gpu(compute_∇8(p), p) : compute_∇8(p)
     ∇8 *= p.cH
     
-    k_SH = transform_SH(k, p, g)
+    k_SH = transform_SH(k, g)
 
-    ∂k∂μ = SHtoGrid_dμ(k_SH, p, g)
-    ∂k∂λ = transform_grid(SHtoSH_dφ(k_SH, g), p, g) ./ (cosϕ .^ 2)
-    ∂k∂ϕ = SHtoGrid_dϕ(k_SH, p, g)
+    ∂k∂μ = SHtoGrid_dμ(k_SH, g.dμ)
+    ∂k∂λ = transform_grid(SHtoSH_dφ(k_SH, g.dλ), g) ./ (cosϕ .^ 2)
+    ∂k∂ϕ = SHtoGrid_dϕ(k_SH, g.dμ)
 
     return QG3Model(p, g, k, TRcoeffs, TR_matrix, cosϕ, acosϕi, Δ, make3d(Δ), Tψq, Tqψ, f, f_J3, ∇8, make3d(∇8), ∂k∂ϕ, ∂k∂μ, ∂k∂λ)
 end
