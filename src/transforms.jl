@@ -25,7 +25,7 @@ transform_SH
 
 # CPU 4D Version (not meant for the model, but for data processing)
 function transform_SH(data::AbstractArray{T,4}, t::AbstractGridtoSHTransform{false}) where T<:Number
-    data_sh = zeros(T, size(data, 1), t.outputsize..., size(data,4))
+    data_sh = zeros(T, size(data, 1), t.output_size..., size(data,4))
     for it ∈ 1:size(data,4)
         data_sh[:,:,:,it] = transform_SH(data[:,:,:,it], t)
     end
@@ -34,7 +34,7 @@ end
 
 # GPU 4D Version (not meant for the model, but for data processing)
 function transform_SH(data::AbstractArray{T,4}, t::AbstractGridtoSHTransform{true}) where T<:Number
-    data_sh = CUDA.zeros(T, size(data, 1), t.outputsize..., size(data,4))
+    data_sh = CUDA.zeros(T, size(data, 1), t.output_size..., size(data,4))
     for it ∈ 1:size(data,4)
         data_sh[:,:,:,it] = transform_SH(data[:,:,:,it], t)
     end
