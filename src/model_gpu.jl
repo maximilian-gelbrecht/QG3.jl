@@ -18,7 +18,7 @@ TR(ψ::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = isongpu(m) ? reshap
 """
 Dissipiation of all levels, 850hPa has additional Ekman dissipation
 """
-D(ψ::AbstractArray{T,3}, q::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = add_to_level(TR(ψ, m) + H(q, m), EK(view(ψ,3,:,:), m), 3)
+D(ψ::AbstractArray{T,3}, q::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = add_to_level(TR(ψ, m) + H(q, m), EK(CuArray(view(ψ,3,:,:)), m), 3)
 
 
 """
