@@ -45,7 +45,14 @@ function Derivative_dλ(p::QG3ModelParameters{T}) where {T}
 
     mm = mMatrix(p)
     mm_3d = make3d(mm)
-    swap_m_sign_array = [1;vcat([[2*i+1,2*i] for i=1:p.L-1]...)]
+
+    if cuda_used[]
+        mm = reorder_SH_gpu(mm, p)
+        mm_3d = reorder_SH_gpu(mm_3d, p)
+        swap_m_sign_array = [1; Int((p.N_lons)/2)+3 : p.N_lons + 2; 1:Int((p.N_lons)/2)+1;]
+    else 
+        swap_m_sign_array = [1;vcat([[2*i+1,2*i] for i=1:p.L-1]...)]
+    end
 
     Derivative_dλ{typeof(mm), typeof(mm_3d), typeof(swap_m_sign_array), cuda_used[]}(togpu(mm), togpu(mm_3d), togpu(swap_m_sign_array))
 end
