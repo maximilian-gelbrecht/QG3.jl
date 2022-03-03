@@ -119,6 +119,8 @@ struct GaussianGrid{T, onGPU} <: AbstractGridType{T, onGPU}
     SHtoG
     dμ
     dλ
+    size_SH
+    size_grid
 end
 
 show(io::IO, g::GaussianGrid{T, true}) where {T} = print(io," Gaussian Grid on GPU")
@@ -142,7 +144,10 @@ function grid(p::QG3ModelParameters{T}, gridtype::String, N_level::Int=3) where 
         dμ = GaussianGrid_dμ(p, N_level)
         dλ = Derivative_dλ(p)
 
-        return GaussianGrid{T, cuda_used[]}(GtoSH, SHtoG, dμ, dλ)
+        size_grid = (p.N_lats, p.N_lons)
+        size_SH = cuda_used[] ? (p.N_lats, p.N_lons+2) : (p.L, p.M)
+
+        return GaussianGrid{T, cuda_used[]}(GtoSH, SHtoG, dμ, dλ, size_SH, size_grid)
     else
         error("Unknown gridtype.")
     end

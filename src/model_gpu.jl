@@ -13,12 +13,12 @@ H(qprime::AbstractArray{T,3}, m::QG3Model{T}) where T<: Number = (m.cH∇8_3d .*
 """
 Temperature relaxation of all levels
 """
-TR(ψ::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = isongpu(m) ? reshape(batched_vec(m.TR_matrix, reshape(ψ,3,:)),3 , m.p.N_lats, m.p.N_lons + 2) : reshape(batched_vec(m.TR_matrix, reshape(ψ,3,:)),3 , m.p.L, m.p.M)
+TR(ψ::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = reshape(batched_vec(m.TR_matrix, reshape(ψ,3,:)),3 , m.g.size_SH...) 
 
 """
 Dissipiation of all levels, 850hPa has additional Ekman dissipation
 """
-D(ψ::AbstractArray{T,3}, q::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = add_to_level(TR(ψ, m) + H(q, m), EK(CuArray(view(ψ,3,:,:)), m), 3)
+D(ψ::AbstractArray{T,3}, q::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = add_to_level(TR(ψ, m) + H(q, m), EK(togpu(view(ψ,3,:,:)), m), 3)
 
 
 """

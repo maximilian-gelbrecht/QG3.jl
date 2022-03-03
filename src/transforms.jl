@@ -235,7 +235,7 @@ end
 function transform_grid(A::AbstractArray{P,2}, t::SHtoGaussianGridTransform{P,S,T,U,true}) where {P,S,T,U}
 
     out = batched_vec(t.P,A)
-
+    
     t.iFT_2d * out
 end
 

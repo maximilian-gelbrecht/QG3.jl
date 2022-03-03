@@ -19,9 +19,8 @@ This version is slightly slower than the old one on CPU (as it not aware of the 
 
 It replaces the double loop over the coefficient matrix with a batched vector multiply. The advantage other besides it being non-mutating is that it is optimised for GPU, so it might actually be faster on the GPU than doing a manual loop.
 """
-function ψtoqprime(p::QG3Model{T}, ψ::AbstractArray{T,3}) where T<:Number
-    return isongpu(p) ? reshape(batched_vec(p.Tψq, reshape(ψ,3,:)),3 , p.p.N_lats, p.p.N_lons + 2) : reshape(batched_vec(p.Tψq, reshape(ψ,3,:)),3 , p.p.L, p.p.M)
-end
+ψtoqprime(p::QG3Model{T}, ψ::AbstractArray{T,3}) where {T} = reshape(batched_vec(p.Tψq, reshape(ψ,3,:)),3 , p.g.size_SH...) 
+
 
 """
 Convert the streamfunction ψ to the potential vorticity
@@ -40,9 +39,7 @@ This version is slightly slower than the old one (as it not aware of the matrix 
 
 It replaces the double loop over the coefficient matrix with a batched vector multiply. The advantage of that is that it is optimised for GPU, so it might actually be faster on the GPU than doing a manual loop.
 """
-function qprimetoψ(p::QG3Model{T}, q::AbstractArray{T,3}) where T<:Number
-    return isongpu(p) ? reshape(batched_vec(p.Tqψ, reshape(q,3,:)),3 , p.p.N_lats, p.p.N_lons + 2) : reshape(batched_vec(p.Tqψ, reshape(q,3,:)),3 , p.p.L, p.p.M)
-end
+qprimetoψ(p::QG3Model{T}, q::AbstractArray{T,3}) where {T} = reshape(batched_vec(p.Tqψ, reshape(q,3,:)),3 , p.g.size_SH...)
 
 """
 Compute the Jacobian determinant from ψ and q in μ,λ coordinates, J = ∂ψ/∂x ∂q/∂y - ∂ψ/∂y ∂q/∂x = 1/a^2cosϕ ( - ∂ψ/∂λ ∂q/∂ϕ + ∂ψ/∂ϕ ∂q/∂λ) =  1/a^2 (- ∂ψ/∂λ ∂q/∂μ + ∂ψ/∂μ ∂q/∂λ)
