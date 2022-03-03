@@ -164,7 +164,7 @@ function transform_SH(A::AbstractArray{P,2}, t::GaussianGridtoSHTransform{P,S,T,
     FTA = t.FT_2d * A
 
     # truncation is performed in this step as Pw has 0s where the expansion is truncated
-    @tullio out[il,im] := g.Pw[i,il,im] * FTA[i,im]
+    @tullio out[il,im] := t.Pw[i,il,im] * FTA[i,im]
 end
 
 # 3D GPU version
