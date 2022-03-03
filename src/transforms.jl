@@ -144,7 +144,7 @@ function GaussianGridtoSHTransform(p::QG3ModelParameters{T}, N_level::Int=3) whe
         end
         outputsize = (p.L, p.M)
     end
-    GaussianGridtoSHTransform{T,typeof(FT_2d),typeof(FT_3d),typeof(Pw),cuda_used[]}(FT_2d, FT_3d, togpu(Pw), truncate_array, outputsize)
+    GaussianGridtoSHTransform{T,typeof(FT_2d),typeof(FT_3d),typeof(Pw),cuda_used[]}(FT_2d, FT_3d, Pw, truncate_array, outputsize)
 end
 
 # 2D CPU version
@@ -209,7 +209,7 @@ function SHtoGaussianGridTransform(p::QG3ModelParameters{T}, N_level::Int=3) whe
     end
     outputsize = (p.N_lats, p.N_lons)
 
-    SHtoGaussianGridTransform{T,typeof(iFT_2d),typeof(iFT_3d),typeof(P),cuda_used[]}(iFT_2d, iFT_3d, togpu(P), outputsize, p.N_lats, p.N_lons, p.M)
+    SHtoGaussianGridTransform{T,typeof(iFT_2d),typeof(iFT_3d),typeof(P),cuda_used[]}(iFT_2d, iFT_3d, P, outputsize, p.N_lats, p.N_lons, p.M)
 end
 
 # 2D CPU Version 

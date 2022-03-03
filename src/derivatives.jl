@@ -49,12 +49,12 @@ function Derivative_dλ(p::QG3ModelParameters{T}) where {T}
     if cuda_used[]
         mm = reorder_SH_gpu(mm, p)
         mm_3d = reorder_SH_gpu(mm_3d, p)
-        swap_m_sign_array = [1; Int((p.N_lons)/2)+3 : p.N_lons + 2; 1:Int((p.N_lons)/2)+1;]
+        swap_m_sign_array = cu([1; Int((p.N_lons)/2)+3 : p.N_lons + 2; 1:Int((p.N_lons)/2)+1;])
     else 
         swap_m_sign_array = [1;vcat([[2*i+1,2*i] for i=1:p.L-1]...)]
     end
 
-    Derivative_dλ{typeof(mm), typeof(mm_3d), typeof(swap_m_sign_array), cuda_used[]}(togpu(mm), togpu(mm_3d), togpu(swap_m_sign_array))
+    Derivative_dλ{typeof(mm), typeof(mm_3d), typeof(swap_m_sign_array), cuda_used[]}(mm, mm_3d, swap_m_sign_array)
 end
 
 """
@@ -135,7 +135,7 @@ function GaussianGrid_dμ(p::QG3ModelParameters{T}, N_level::Int=3) where {T}
     outputsize = (p.N_lats, p.N_lons)
 
     msinθ = togpu(T.(reshape(-sin.(p.θ),p.N_lats, 1)))
-    msinθ_3d = make3d(msinθ)
+    msinθ_3d = togpu(make3d(msinθ))
 
     GaussianGrid_dμ{cuda_used[]}(SHtoGaussianGridTransform{T,typeof(iFT_2d),typeof(iFT_3d),typeof(dPμdμ),cuda_used[]}(iFT_2d, iFT_3d, dPμdμ, outputsize, p.N_lats, p.N_lons, p.M), msinθ, msinθ_3d)
 end
