@@ -1,3 +1,5 @@
+# This file holds the basic that store the precomputed model and grid information
+
 import Base.show, Base.eltype
 
 """

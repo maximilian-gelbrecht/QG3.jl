@@ -6,6 +6,9 @@ import Base.show
 
 # there are variants for GPU and CPU, the different grids and 3d and 2d fields
 
+# longitude derivates are computed via SH relation 
+# latitude derivatives are computed pseudo-spectral with pre-computed ass. legendre polynomials
+
 abstract type AbstractDerivative{onGPU} end 
 
 abstract type AbstractλDerivative{onGPU} <: AbstractDerivative{onGPU} end

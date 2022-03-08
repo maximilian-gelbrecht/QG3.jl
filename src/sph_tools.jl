@@ -41,6 +41,18 @@ function reorder_SH_gpu(A::AbstractArray{S,3}, p::QG3ModelParameters{T}) where {
     return togpu(out[:,:,reindex])
 end
 
+function reorder_SH_gpu(A::AbstractArray{S,4}, p::QG3ModelParameters{T}) where {S,T}
+    if !(cuda_used[])
+        return A
+    end
+
+    reindex = [1:2:(p.N_lons+2);[(p.N_lons+2)]; 2:2:(p.N_lons+1)]
+
+    out = zeros(S, size(A, 1), size(A,2), p.N_lats, p.N_lons+2)
+    out[:, :, 1:p.L, 1:p.M] = A
+    return togpu(out[:,:,reindex])
+end
+
 function get_uppertriangle_sum(A)
     cumsum = 0
     for i=1:size(A,1)
