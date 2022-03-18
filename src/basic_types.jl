@@ -243,7 +243,7 @@ function QG3Model(p::QG3ModelParameters)
     return QG3Model(p, g, k, TRcoeffs, TR_matrix, cosϕ, acosϕi, Δ, make3d(Δ), Tψq, Tqψ, f, f_J3, ∇8, make3d(∇8), ∂k∂ϕ, ∂k∂μ, ∂k∂λ)
 end
 
-show(io::IO, m::QG3Model{T}) where {T} = print(io, "Pre-computed QG3Model{",T,"} with ",m.p, " on a",m.g, "with gridsize ",size_SH," and L_max",m.p.L - 1," on ", isongpu_string(m)) 
+show(io::IO, m::QG3Model{T}) where {T} = print(io, "Pre-computed QG3Model{",T,"} with ",m.p, " on a",m.g, "with gridsize ",m.g.size_SH," and L_max",m.p.L - 1," on ", isongpu_string(m)) 
 
 """
     isongpu(m::QG3Model{T})
