@@ -24,7 +24,7 @@ function gpuon() # manually toggle GPU use on and off
 end
 
 """
-    gpuon()
+    gpuoff()
 
 Manually toggle GPU use off
 """
