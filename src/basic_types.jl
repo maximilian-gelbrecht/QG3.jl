@@ -5,7 +5,16 @@ import Base.show, Base.eltype
 """
     QG3ModelParameters{T}
 
-Saves all the parameters of the model
+Saves all the parameters of the model, also the units/normalization. 
+
+# A word on the normalization of the model
+
+The model is normalized in (natural) units of the system. 
+
+* Distance: The Earth's radius is set to `1` (and thus all units containing distance are scaled with the actual radius of the Earth)
+* Vorticity: Earth's angular speed is approximately 2π/d, here Earth's angular speed is set 2Ω = 1, so that the planetery vorticity component of the Jacobian is just ∂ψ/∂λ. Therefore: Ω = 1/2, it follows 2*2π [1/d] = 1 [Ω_normalized], therefore Ω_normalized = 4π/d. 
+* Time: From the vorticity unit, follows the time unit is [d/4π] = [d_normalized]. Hence, time in days must be devided by 4π to get the natural time unit, or [d_normalized] = 4π [d]
+* both ψ and q thus need to expressed in these units too, this can be done using the `ψ_unit` and `q_unit`
 
 # Fields
 
@@ -26,17 +35,15 @@ Saves all the parameters of the model
     * `cH::T` horizonatal diffusion coefficient
     * `α1::T` drag coefficient 1, default 0.5
     * `α2::T` drag coefficient 2, default 0.5
-    * `a::T` Earth's radius  # WIP: some functions assume a=1
-    * `Ω::T` Earth's angular speed for Coriolis # WIP: some functions assume Ω=1/2
     * `gridtype::String` either 'gaussian' or 'regular', 'gaussian' leads to all transform being done by somewhat naively implemented transforms, 'regular' uses FastTransforms.jl
-    * `time_unit::T` unit so that t [normalized] = t [s] / time_unit, default = 1/4π
-    * `distance_unit::T`, default Earth's radius
-    * `ψ_unit::T`, derived from time_unit and distance_unit
+    * `time_unit::T` unit so that t [normalized] = t [d] / time_unit, default = 1/4π
+    * `distance_unit::T`, default Earth's radius, so that s [normalized] = s [m] / distance_unit, default = 6.371e6
+    * `ψ_unit::T`, derived from time_unit and distance_unit, so that ψ [normalized] = ψ [m^2/s] / ψ_unit
     * `q_unit::T`, derived from time_unit and distance_unit
 
 # Other constructors
 
-    QG3ModelParameters(L::Int, lats::AbstractArray{T,1}, lons::AbstractArray{T,1}, LS::AbstractArray{T,2}, h::AbstractArray{T,2}, R1i::T, R2i::T, H0::T, τRi::T, τEi::T, τHi::T, α1::T, α2::T, a::T, Ω::T, gridtype::String, time_unit::T, distance_unit::T)
+    QG3ModelParameters(L::Int, lats::AbstractArray{T,1}, lons::AbstractArray{T,1}, LS::AbstractArray{T,2}, h::AbstractArray{T,2}, R1i::T, R2i::T, H0::T, τRi::T, τEi::T, τHi::T, α1::T, α2::T, a::T, gridtype::String, time_unit::T, distance_unit::T)
 
 Default arguments for most parameters, so that
 
@@ -68,8 +75,6 @@ struct QG3ModelParameters{T}
     cH::T
     α1::T
     α2::T
-    a::T
-    Ω::T
 
     gridtype::String
 
@@ -79,7 +84,7 @@ struct QG3ModelParameters{T}
     q_unit::T
 end
 
-function QG3ModelParameters(L::Int, lats::AbstractArray{T,1}, lons::AbstractArray{T,1}, LS::AbstractArray{T,2}, h::AbstractArray{T,2}, R1i::Number=82.83600204081633, R2i::Number=200.44267160493825, H0::Number=9000., τRi::Number=0.0031830988618379067, τEi::Number=0.026525823848649224, τHi::Number=0.039788735772973836, α1::Number=0.5, α2::Number=0.5, a::Number=1., Ω::Number=1/2, gridtype::String="gaussian", time_unit::Number=0.07957747154594767, distance_unit::Number=6.371e6) where T<:Real
+function QG3ModelParameters(L::Int, lats::AbstractArray{T,1}, lons::AbstractArray{T,1}, LS::AbstractArray{T,2}, h::AbstractArray{T,2}, R1i::Number=82.83600204081633, R2i::Number=200.44267160493825, H0::Number=9000., τRi::Number=0.0031830988618379067, τEi::Number=0.026525823848649224, τHi::Number=0.039788735772973836, α1::Number=0.5, α2::Number=0.5, gridtype::String="gaussian", time_unit::Number=0.07957747154594767, distance_unit::Number=6.371e6) where T<:Real
 
     N_lats = size(lats,1)
 
@@ -90,17 +95,17 @@ function QG3ModelParameters(L::Int, lats::AbstractArray{T,1}, lons::AbstractArra
     μ = sin.(lats)
 
     λmax = (length(lats)-1) * ((length(lats)-1) +1) # largest eigenvalue of the laplacian of the grid (in spherical harmonics)
-    cH = τHi * a^8 * (λmax)^(-4)
+    cH = τHi * (λmax)^(-4) # * a^8, but a==1
 
     ψ_unit = (distance_unit*distance_unit)/(24*60*60*time_unit)
     q_unit = 1/(60*60*24*time_unit)
 
-    return QG3ModelParameters(L, M, N_lats, N_lons, lats, colats, μ, lons, LS, h, T(R1i), T(R2i), T(H0), T(τRi), T(τEi), T(cH), T(α1), T(α2), T(a), T(Ω), gridtype, T(time_unit), T(distance_unit), T(ψ_unit), T(q_unit))
+    return QG3ModelParameters(L, M, N_lats, N_lons, lats, colats, μ, lons, LS, h, T(R1i), T(R2i), T(H0), T(τRi), T(τEi), T(cH), T(α1), T(α2), gridtype, T(time_unit), T(distance_unit), T(ψ_unit), T(q_unit))
 end
 
-togpu(p::QG3ModelParameters) = QG3ModelParameters(p.L, p.M, p.N_lats, p.N_lons, togpu(p.lats), togpu(p.θ), togpu(p.μ), togpu(p.lons), togpu(p.LS), togpu(p.h), p.R1i, p.R2i, p.H0, p.τRi, p.τEi, p.cH, p.α1, p.α2, p.a, p.Ω, p.gridtype, p.time_unit, p.distance_unit, p.ψ_unit, p.q_unit)
+togpu(p::QG3ModelParameters) = QG3ModelParameters(p.L, p.M, p.N_lats, p.N_lons, togpu(p.lats), togpu(p.θ), togpu(p.μ), togpu(p.lons), togpu(p.LS), togpu(p.h), p.R1i, p.R2i, p.H0, p.τRi, p.τEi, p.cH, p.α1, p.α2, p.gridtype, p.time_unit, p.distance_unit, p.ψ_unit, p.q_unit)
 
-tocpu(p::QG3ModelParameters) = QG3ModelParameters(p.L, p.M, p.N_lats, p.N_lons, tocpu(p.lats), tocpu(p.θ), tocpu(p.μ), tocpu(p.lons), tocpu(p.LS), tocpu(p.h), p.R1i, p.R2i, p.H0, p.τRi, p.τEi, p.cH, p.α1, p.α2, p.a, p.Ω, p.gridtype, p.time_unit, p.distance_unit, p.ψ_unit, p.q_unit)
+tocpu(p::QG3ModelParameters) = QG3ModelParameters(p.L, p.M, p.N_lats, p.N_lons, tocpu(p.lats), tocpu(p.θ), tocpu(p.μ), tocpu(p.lons), tocpu(p.LS), tocpu(p.h), p.R1i, p.R2i, p.H0, p.τRi, p.τEi, p.cH, p.α1, p.α2, p.gridtype, p.time_unit, p.distance_unit, p.ψ_unit, p.q_unit)
 
 show(io::IO, p::QG3ModelParameters{T}) where {T} = print(io," QG3ModelParameters{",T,"} with N_lats=",p.N_lats," N_lons=",p.N_lons," L_max=",p.L-1)
 

@@ -170,10 +170,10 @@ function compute_coriolis_vector_grid(p::QG3ModelParameters{T}) where T<:Number
     h = tocpu(p.h)
 
     for ilat ∈ 1:p.N_lats
-        f[1:2,ilat,:] .= T(2)*p.Ω*sin(lats[ilat])
+        f[1:2,ilat,:] .= sin(lats[ilat])
 
         for ilon ∈ 1:p.N_lons
-            f[3,ilat,ilon] = T(2)*p.Ω*sin(lats[ilat])*(T(1) + h[ilat,ilon]/p.H0)
+            f[3,ilat,ilon] = sin(lats[ilat])*(T(1) + h[ilat,ilon]/p.H0)
         end
     end
     return f
@@ -194,8 +194,8 @@ end
 Pre-compute the Laplacian in Spherical Harmonics, follows the matrix convention of FastTransforms.jl
 """
 function compute_Δ(p::QG3ModelParameters{T}) where T<:Number
-    l = lMatrix(p)
-    return -l .* (l .+ 1) ./ (p.a^2)
+    l = T.(lMatrix(p))
+    return -l .* (l .+ 1)
 end
 
 """"
@@ -231,6 +231,6 @@ function compute_cosϕ(p::QG3ModelParameters{T}) where {T}
 end
 
 """
-Pre-compute (a*cos(ϕ))^-1 (latitude matrix)
+Pre-compute cos(ϕ)^-1 (latitude matrix)
 """
-compute_acosϕi(p::QG3ModelParameters) = (compute_cosϕ(p) .* p.a).^(-1)
+compute_acosϕi(p::QG3ModelParameters) = compute_cosϕ(p).^(-1)

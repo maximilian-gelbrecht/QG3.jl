@@ -86,7 +86,7 @@ Horizontal diffusion, q' is anomolous pv (without coriolis) 2D Fields m.cH∇8 =
 """
 H(qprime::AbstractArray{T,3}, i::Int, m::QG3Model{T}) where T<: Number = m.cH∇8 .* qprime[i,:,:]
 
-u(ψ, m) = -m.p.a^(-1) .* SHtoGrid_dϕ(ψ, m)
+u(ψ::AbstractArray{T,N}, m::QG3Model{T}) where {T,N} = T(-1) .* SHtoGrid_dϕ(ψ, m)
 v(ψ, m) = m.acosϕi .* SHtoGrid_dλ(ψ, m)
 
 """
