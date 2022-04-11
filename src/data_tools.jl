@@ -1,5 +1,12 @@
 lat_to_colat(lat::T) where {T} = T(π/2) - lat
 
+"""
+    hours(x, m::QG3Model)
+
+Convert from model time units to hours
+"""
+hours(x, m::QG3Model) = hours(x, m.p)
+hours(x, p::QG3ModelParameters) = x * p.time_unit * (60*60*24)
 
 """
     make3d(A::AbstractArray{T,2})
