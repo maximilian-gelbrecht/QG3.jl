@@ -84,7 +84,7 @@ struct QG3ModelParameters{T}
     q_unit::T
 end
 
-function QG3ModelParameters(L::Int, lats::AbstractArray{T,1}, lons::AbstractArray{T,1}, LS::AbstractArray{T,2}, h::AbstractArray{T,2}, R1i::Number=82.83600204081633, R2i::Number=200.44267160493825, H0::Number=9000., τRi::Number=0.0031830988618379067, τEi::Number=0.026525823848649224, τHi::Number=0.039788735772973836, α1::Number=0.5, α2::Number=0.5, gridtype::String="gaussian", time_unit::Number=0.07957747154594767, distance_unit::Number=6.371e6) where T<:Real
+function QG3ModelParameters(L::Int, lats::AbstractArray{T,1}, lons::AbstractArray{T,1}, LS::AbstractArray{T,2}=zeros(T,(1,1)), h::AbstractArray{T,2}=zeros(T,(1,1)), R1i::Number=82.83600204081633, R2i::Number=200.44267160493825, H0::Number=9000., τRi::Number=0.0031830988618379067, τEi::Number=0.026525823848649224, τHi::Number=0.039788735772973836, α1::Number=0.5, α2::Number=0.5, gridtype::String="gaussian", time_unit::Number=0.07957747154594767, distance_unit::Number=6.371e6) where T<:Real
 
     N_lats = size(lats,1)
 
