@@ -25,15 +25,6 @@ Required fields:
 abstract type AbstractμDerivative{onGPU} <: AbstractDerivative{onGPU} end
 
 """
-derivative of input after θ (azimutal angle/colatitude) in SH, uses pre computed SH evaluations (dependend on the grid type)
-"""
-SHtoGrid_dθ(ψ, m::QG3Model{T}) where {T} = SHtoGrid_dθ(ψ, m.g.dμ)
-
-SHtoGrid_dθ(ψ::AbstractArray{T,2}, d::AbstractμDerivative) where {T} = d.msinθ .* SHtoGrid_dμ(ψ, d)
-
-SHtoGrid_dθ(ψ::AbstractArray{T,3}, d::AbstractμDerivative) where {T} = d.msinθ_3d .* SHtoGrid_dμ(ψ, d)
-
-"""
     Derivative_dλ
 
 Pre-computes Derivatives by longitude. Uses the SH relation, is therefore independ from the grid.
@@ -61,19 +52,39 @@ function Derivative_dλ(p::QG3ModelParameters{T}) where {T}
 end
 
 """
-derivative of input after φ (polar angle) or λ (longtitude) in SH to Grid, only for a single layer
+    SHtoGrid_dφ(ψ, m::QG3Model{T})
+    SHtoGrid_dφ(ψ, m::AbstractGridType{T})
+
+Derivative of input after φ (polar angle) or λ (longtitude) in SH to Grid
 """
 SHtoGrid_dφ(ψ, m::QG3Model{T}) where {T} = transform_grid(SHtoSH_dφ(ψ,m), m)
+SHtoGrid_dφ(ψ, g::AbstractGridType{T}) where {T} = transform_grid(SHtoSH_dφ(ψ,g), g)
 
+"""
+    SHtoGrid_dλ(ψ, m::QG3Model{T})
+    SHtoGrid_dλ(ψ, m::AbstractGridType{T})
+
+Derivative of input after φ (polar angle) or λ (longtitude) in SH to Grid
+"""
 SHtoGrid_dλ(ψ, m) = SHtoGrid_dφ(ψ, m)
+
+"""
+    SHtoSH_dλ(ψ, m::QG3Model{T})
+    SHtoSH_dλ(ψ, g::GaussianGrid) 
+
+Derivative of input after φ (polar angle/longtitude) in SH, output in SH
+"""
 SHtoSH_dλ(ψ, m) = SHtoSH_dφ(ψ, m)
 
 """
-derivative of input after φ (polar angle/longtitude) in SH, output in SH
+    SHtoSH_dφ(ψ, m::QG3Model{T})
+    SHtoSH_dφ(ψ, g::GaussianGrid) 
+    SHtoSH_dφ(ψ, g::Derivative_dλ) 
+
+Derivative of input after φ (polar angle/longtitude) in SH, output in SH
 """
 SHtoSH_dφ(ψ, m::QG3Model{T}) where {T} = SHtoSH_dφ(ψ, m.g)
 SHtoSH_dφ(ψ, g::GaussianGrid) = SHtoSH_dφ(ψ, g.dλ)
-
 
 # 2d field variant
 SHtoSH_dφ(ψ::AbstractArray{T,2}, g::Derivative_dλ) where {T} = _SHtoSH_dφ(ψ, g.mm, g.swap_m_sign_array)
@@ -144,7 +155,11 @@ function GaussianGrid_dμ(p::QG3ModelParameters{T}, N_level::Int=3) where {T}
 end
 
 """
-derivative of input after μ = sinϕ in SH, uses pre computed SH evaluations
+    SHtoGrid_dμ(ψ, m::QG3Model{T}) 
+    SHtoGrid_dμ(ψ, g::AbstractGridType) 
+    SHtoGrid_dμ(ψ, d::GaussianGrid_dμ) 
+
+Derivative of input after μ = sinϕ in SH, uses pre computed SH evaluations
 """
 SHtoGrid_dμ(ψ, m::QG3Model{T}) where {T}= SHtoGrid_dμ(ψ, m.g)
 SHtoGrid_dμ(ψ, g::AbstractGridType) = SHtoGrid_dμ(ψ, g.dμ)
@@ -152,5 +167,19 @@ SHtoGrid_dμ(ψ, d::GaussianGrid_dμ) = transform_grid(ψ, d.t)
 
 SHtoSH_dθ(ψ, m) = transform_SH(SHtoGrid_dθ(ψ,m), m)
 SHtoSH_dϕ(ψ, m) = eltype(ψ)(-1) .* SHtoSH_dθ(ψ, m)
+
+"""
+    SHtoGrid_dϕ(ψ, m)
+
+Derivative of input after ϕ - latitude in SH, uses pre computed SH evaluations
+"""
 SHtoGrid_dϕ(ψ, m) = eltype(ψ)(-1) .* SHtoGrid_dθ(ψ, m)
 SHtoGrid_dϕ(ψ, d::GaussianGrid_dμ) = eltype(ψ)(-1) .* SHtoGrid_dθ(ψ, d)
+
+"""
+derivative of input after θ (azimutal angle/colatitude) in SH, uses pre computed SH evaluations (dependend on the grid type)
+"""
+SHtoGrid_dθ(ψ, m::QG3Model{T}) where {T} = SHtoGrid_dθ(ψ, m.g.dμ)
+SHtoGrid_dθ(ψ, g::GaussianGrid{T}) where {T} = SHtoGrid_dθ(ψ, g.dμ)
+SHtoGrid_dθ(ψ::AbstractArray{T,2}, d::AbstractμDerivative) where {T} = d.msinθ .* SHtoGrid_dμ(ψ, d)
+SHtoGrid_dθ(ψ::AbstractArray{T,3}, d::AbstractμDerivative) where {T} = d.msinθ_3d .* SHtoGrid_dμ(ψ, d)
