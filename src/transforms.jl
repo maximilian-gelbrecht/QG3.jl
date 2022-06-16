@@ -259,7 +259,7 @@ m values are stored 0,1,2,3,4,5,6,7, ...l_max, 0 (nothing),-1, -2, -3, (on GPU) 
 
 
 """
-function compute_P(L::Integer, M::Integer, μ::AbstractArray{T,1}; sh_norm=GSL_SF_LEGENDRE_FULL, CSPhase::Integer=-1) where T<:Number
+function compute_P(L::Integer, M::Integer, μ::AbstractArray{T,1}; sh_norm=GSL_SF_LEGENDRE_SPHARM, CSPhase::Integer=-1,prefactor=true) where T<:Number
 
     N_lats = length(μ)
     P = zeros(T, N_lats, L, M)
@@ -267,11 +267,8 @@ function compute_P(L::Integer, M::Integer, μ::AbstractArray{T,1}; sh_norm=GSL_S
 
     gsl_legendre_index(l,m) = m > l ? error("m > l, not defined") : sf_legendre_array_index(l,m)+1 # +1 because of c indexing vs julia indexing
 
-    # normalization pre-factor for real SPH
-    #pre_factor(m) = m==0 ? sqrt(T(2)) : sqrt(T(4)) 
-
-    #pre_factor(m) = m==0 ? T(1) : sqrt(T(2)) 
-    pre_factor(m) = T(1)
+    # normalization pre-factor for real SPH    
+    pre_factor(m) = prefactor ? (m==0 ? T(1) : sqrt(T(2))) : T(1)
 
     for ilat ∈ 1:N_lats
         temp = sf_legendre_deriv_array_e(sh_norm, L - 1, μ[ilat], CSPhase)
@@ -318,7 +315,7 @@ end
 function compute_LegendreGauss(p::QG3ModelParameters{T}, P::AbstractArray{T,3},w::AbstractArray{T,1}) where T<:Number
     # P in format lat x L x M
     for i=1:p.N_lats
-        P[i,:,:] *= w[i] # 4π from integral norm 
+        P[i,:,:] *= (2π*w[i]) # 4π from integral norm 
     end
     P
 end
