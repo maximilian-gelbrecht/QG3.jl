@@ -259,7 +259,7 @@ m values are stored 0,1,2,3,4,5,6,7, ...l_max, 0 (nothing),-1, -2, -3, (on GPU) 
 
 
 """
-function compute_P(L::Integer, M::Integer, μ::AbstractArray{T,1}; sh_norm=GSL_SF_LEGENDRE_SPHARM, CSPhase::Integer=-1,prefactor=true) where T<:Number
+function compute_P(L::Integer, M::Integer, μ::AbstractArray{T,1}; sh_norm=GSL_SF_LEGENDRE_SPHARM, CSPhase::Integer=-1,prefactor=false) where T<:Number
 
     N_lats = length(μ)
     P = zeros(T, N_lats, L, M)

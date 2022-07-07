@@ -8,3 +8,4 @@
 /docs/build/.DS_Store
 /anim_fps20.gif
 LocalPreferences.toml
+*.DS_Store

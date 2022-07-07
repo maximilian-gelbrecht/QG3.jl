@@ -1,0 +1,8 @@
+[deps]
+AssociatedLegendrePolynomials = "2119f1ac-fb78-50f5-8cc0-dda848ebdb19"
+Conda = "8f4d0f93-b110-5947-807f-2305c1781a2d"
+GSL = "92c85e6c-cbff-5e0c-80f7-495c94daaecd"
+PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
+PyPlot = "d330b81b-6aea-500a-939a-2ce795aea3ee"
+QG3 = "d558103f-7907-4730-8f30-3d9252e5a318"
+SpeedyWeather = "9e226e20-d153-4fed-8a5b-493def4f21a9"

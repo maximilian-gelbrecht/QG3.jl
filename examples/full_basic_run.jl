@@ -64,7 +64,7 @@ S = @time QG3.compute_S_Roads(ψ_SH[:,:,:,winter_ind], qg3p)
 
 # time step
 DT = T(2π/144)
-t_end = T(3000.)
+t_end = T(500.)
 
 # problem definition with standard model from the library and solve
 prob = ODEProblem(QG3.QG3MM_base, q_0, (T(0.),t_end), (qg3p, S))
@@ -82,7 +82,7 @@ if PLOT
 
         clims = (-1.1*maximum(abs.(ψ[ilvl,:,:,:])),1.1*maximum(abs.(ψ[ilvl,:,:,:]))) # get colormap maxima
 
-        plot_times = 0:(t_end)/400:400.  # choose timesteps to plot
+        plot_times = 0:(t_end)/500:500.  # choose timesteps to plot
 
         anim = @animate for (iit,it) ∈ enumerate(plot_times)
             sf_plot = transform_grid(qprimetoψ(qg3p, sol(Float32(it))),qg3p)

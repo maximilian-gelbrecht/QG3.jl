@@ -30,7 +30,7 @@ pyplot()
 PLOT = true
 if PLOT
         ilvl = 1  # choose lvl to plot here
-        ψ_0g = transform_grid(qprimetoψ(qg3p, sol(0.)),qg3p)
+        ψ_0g = transform_grid(qprimetoψ(qg3p, sol(T(0.))),qg3p)
         clims = (-1.1*maximum(abs.(ψ_0g[ilvl,:,:])),1.1*maximum(abs.(ψ_0g[ilvl,:,:,:]))) # get colormap maxima
 
         plot_times = 0:(t_end)/200:t_end  # choose timesteps to plot
