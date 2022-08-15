@@ -1,4 +1,4 @@
-/Manifest.toml
+*Manifest.toml
 /.DS_Store
 /data/ERA5-sf-t21q.nc
 /data/land-t21.nc
