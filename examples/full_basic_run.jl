@@ -1,4 +1,6 @@
 # this is a basic run from netcdf files, you have to make sure that the data is there. it is not present in the repository where you'll only find example initial conditions and a pre-computed forcing in order to save space in the repository / package.
+import Pkg 
+Pkg.activate("examples")
 
 using QG3, NetCDF, CFTime, Dates, BenchmarkTools, DifferentialEquations
 

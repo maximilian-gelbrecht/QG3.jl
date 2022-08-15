@@ -1,4 +1,6 @@
 # this file is an example how to run from a pre-computed model
+import Pkg 
+Pkg.activate("examples")
 
 using QG3, BenchmarkTools, DifferentialEquations, JLD2
 

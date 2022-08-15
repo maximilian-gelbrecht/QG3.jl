@@ -1,4 +1,6 @@
 # this is an example how to pre-compute the model (and not run it) from netcdf files, you have to make sure that the data is there.
+import Pkg 
+Pkg.activate("examples")
 
 using QG3, NetCDF, CFTime, Dates, BenchmarkTools, DifferentialEquations, JLD2
 
