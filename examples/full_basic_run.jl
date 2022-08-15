@@ -77,7 +77,9 @@ sol = @time solve(prob, Tsit5(), dt=DT)
 using Plots
 
 PLOT = true
-if PLOT
+
+"""
+ if PLOT
         ilvl = 1  # choose lvl to plot here
 
         clims = (-1.1*maximum(abs.(ψ[ilvl,:,:,:])),1.1*maximum(abs.(ψ[ilvl,:,:,:]))) # get colormap maxima
@@ -85,7 +87,21 @@ if PLOT
         plot_times = 0:(t_end)/200:t_end  # choose timesteps to plot
 
         anim = @animate for (iit,it) ∈ enumerate(plot_times)
-            sf_plot = transform_grid(qprimetoψ(qg3p, sol(it)),qg3p)
+            heatmap(ψ[ilvl,:,:,iit], c=:balance, title=string("time=",it,"   - ",it*qg3p.p.time_unit," d"), clims=clims)
+        end
+        gif(anim, "data_fps20.gif", fps = 20)
+ end
+"""
+
+if PLOT
+        ilvl = 1  # choose lvl to plot here
+
+        clims = (-1.1*maximum(abs.(ψ[ilvl,:,:,:])),1.1*maximum(abs.(ψ[ilvl,:,:,:]))) # get colormap maxima
+
+        plot_times = 0:(t_end)/500:500.  # choose timesteps to plot
+
+        anim = @animate for (iit,it) ∈ enumerate(plot_times)
+            sf_plot = transform_grid(qprimetoψ(qg3p, sol(Float32(it))),qg3p)
             heatmap(sf_plot[ilvl,:,:], c=:balance, title=string("time=",it,"   - ",it*qg3p.p.time_unit," d"), clims=clims)
         end
         gif(anim, "anim_fps20.gif", fps = 20)

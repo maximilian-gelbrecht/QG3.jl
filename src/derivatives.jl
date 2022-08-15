@@ -37,7 +37,7 @@ end
 
 function Derivative_dλ(p::QG3ModelParameters{T}) where {T}
 
-    mm = mMatrix(p)
+    mm = -(mMatrix(p))
     mm_3d = make3d(mm)
 
     if cuda_used[]
@@ -129,7 +129,7 @@ show(io::IO, t::GaussianGrid_dμ{true}) = print(io, "Pre-computed SH to Gaussian
 show(io::IO, t::GaussianGrid_dμ{false}) = print(io, "Pre-computed SH to Gaussian Grid Derivative{",P,"} on CPU")
 
 function GaussianGrid_dμ(p::QG3ModelParameters{T}, N_level::Int=3) where {T}
-    dPμdμ, __, __ = compute_P(p)
+    dPμdμ, __ = compute_P(p)
     A_real = togpu(rand(T, N_level, p.N_lats, p.N_lons))
 
     if cuda_used[]

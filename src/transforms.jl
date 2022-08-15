@@ -118,7 +118,7 @@ show(io::IO, t::GaussianGridtoSHTransform{P,S,T,U,false}) where {P,S,T,U} = prin
 
 
 function GaussianGridtoSHTransform(p::QG3ModelParameters{T}, N_level::Int=3) where {T}
-    __, __, P = compute_P(p)
+    __, P = compute_P(p)
     Pw = compute_LegendreGauss(p, P)
     A_real = togpu(rand(T, N_level, p.N_lats, p.N_lons))
 
@@ -190,7 +190,7 @@ show(io::IO, t::SHtoGaussianGridTransform{P,S,T,U,true}) where {P,S,T,U} = print
 show(io::IO, t::SHtoGaussianGridTransform{P,S,T,U,false}) where {P,S,T,U} = print(io, "Pre-computed SH to Gaussian Grid Transform{",P,"} on CPU")
 
 function SHtoGaussianGridTransform(p::QG3ModelParameters{T}, N_level::Int=3) where {T}
-    __, __, P = compute_P(p)
+    __, P = compute_P(p)
     A_real = togpu(rand(T, N_level, p.N_lats, p.N_lons))
 
     if cuda_used[]
@@ -259,35 +259,34 @@ m values are stored 0,1,2,3,4,5,6,7, ...l_max, 0 (nothing),-1, -2, -3, (on GPU) 
 
 
 """
-function compute_P(L::Integer, M::Integer, μ::AbstractArray{T,1}; sh_norm=GSL_SF_LEGENDRE_FULL, CSPhase::Integer=-1) where T<:Number
+function compute_P(L::Integer, M::Integer, μ::AbstractArray{T,1}; sh_norm=GSL_SF_LEGENDRE_SPHARM, CSPhase::Integer=-1,prefactor=false) where T<:Number
 
     N_lats = length(μ)
     P = zeros(T, N_lats, L, M)
     dPμdμ = zeros(T, N_lats, L, M)
-    dPcosθdθ = zeros(T, N_lats, L, M)
 
     gsl_legendre_index(l,m) = m > l ? error("m > l, not defined") : sf_legendre_array_index(l,m)+1 # +1 because of c indexing vs julia indexing
 
+    # normalization pre-factor for real SPH    
+    pre_factor(m) = prefactor ? (m==0 ? T(1) : sqrt(T(2))) : T(1)
+
     for ilat ∈ 1:N_lats
         temp = sf_legendre_deriv_array_e(sh_norm, L - 1, μ[ilat], CSPhase)
-        temp_alt = sf_legendre_deriv_alt_array_e(sh_norm, L - 1, μ[ilat], CSPhase)
 
         for m ∈ -(L-1):(L-1)
             for il ∈ 1:(L - abs(m)) # l = abs(m):l_max
                 l = il + abs(m) - 1
                 if m<0 # the ass. LP are actually the same for m<0 for our application as only |m| is needed, but I do this here in this way to have everything related to SH in the same matrix format
-                    P[ilat, il, 2*abs(m)] = temp[1][gsl_legendre_index(l,abs(m))]
-                    dPμdμ[ilat, il, 2*abs(m)] = temp[2][gsl_legendre_index(l,abs(m))]
-                    dPcosθdθ[ilat, il, 2*abs(m)] =  temp_alt[2][gsl_legendre_index(l,abs(m))]
+                    P[ilat, il, 2*abs(m)] = pre_factor(m) * temp[1][gsl_legendre_index(l,abs(m))]
+                    dPμdμ[ilat, il, 2*abs(m)] = pre_factor(m) * temp[2][gsl_legendre_index(l,abs(m))]
                 else
-                    P[ilat, il, 2*m+1] = temp[1][gsl_legendre_index(l,m)]
-                    dPμdμ[ilat, il, 2*m+1] = temp[2][gsl_legendre_index(l,m)]
-                    dPcosθdθ[ilat, il, 2*m+1] = temp_alt[2][gsl_legendre_index(l,m)]
+                    P[ilat, il, 2*m+1] = pre_factor(m) * temp[1][gsl_legendre_index(l,m)]
+                    dPμdμ[ilat, il, 2*m+1] = pre_factor(m) * temp[2][gsl_legendre_index(l,m)]
                 end
             end
         end
     end
-    return dPμdμ, dPcosθdθ, P
+    return dPμdμ, P
 end
 compute_P(p::QG3ModelParameters; kwargs...) = compute_P(p.L, p.M, p.μ; kwargs...)
 
@@ -316,7 +315,7 @@ end
 function compute_LegendreGauss(p::QG3ModelParameters{T}, P::AbstractArray{T,3},w::AbstractArray{T,1}) where T<:Number
     # P in format lat x L x M
     for i=1:p.N_lats
-        P[i,:,:] *= w[i]
+        P[i,:,:] *= (2π*w[i]) # 4π from integral norm 
     end
     P
 end

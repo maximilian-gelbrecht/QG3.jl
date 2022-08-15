@@ -27,12 +27,12 @@ end
 
 mean(abs.(QG3MM_cpu(q_0) - QG3MM_gpu(q_0))) < 1e-8
 
-g2 = gradient(Params([a])) do
+g2 = Zygote.gradient(Params([a])) do
     sum(QG3MM_gpu(q_0))
 end
 A = g2[a]
 
-g = gradient(Params([a])) do
+g = Zygote.gradient(Params([a])) do
     sum(QG3MM_cpu(q_0))
 end
 B = g[a]
@@ -49,12 +49,12 @@ swap_sign(A::AbstractArray{T,2},swap) where {T} = @inbounds view(A,:,swap)
 
 swap_sign(A::AbstractArray{T,3},swap) where {T} = @inbounds view(A,:,:,swap)
 
-g = gradient(Params([a])) do
+g = Zygote.gradient(Params([a])) do
     sum(a .* swap_sign(q_0,swap_array))
 end
 B = g[a]
 
-g2 = gradient(Params([a])) do
+g2 = Zygote.gradient(Params([a])) do
     sum(a .* QG3.change_msign(q_0,swap_array))
 end
 A = g[a]
@@ -66,9 +66,8 @@ loss(x) = sum(abs2,QG3.change_msign(a .* QG3.change_msign(q_0,swap_array), swap_
 
 loss(q_0)
 
-using Flux
 for i=1:5000
-    Flux.train!(loss, Flux.params(a), [q_0], ADAM())
+    Flux.train!(loss, Flux.params(a), [q_0], Adam())
 end
 
 @test loss(q_0) < 1e-1
