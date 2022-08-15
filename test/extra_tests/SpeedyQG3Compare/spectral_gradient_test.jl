@@ -1,5 +1,7 @@
 import Pkg
-Pkg.activate(".")
+Pkg.activate("test/extra_tests/SpeedyQG3Compare") # make sure this is the right environment
+
+# Speedy Comparision only partially working through all of the recent changes to Speedy, but the pySPHARM one is working 
 
 # some preperation borrowed from the speedy gradient test 
 
@@ -7,39 +9,45 @@ using SpeedyWeather, PyPlot
 
 NF = Float64
 prog_vars,diag_vars,model_setup = SpeedyWeather.initialize_speedy(NF,trunc=85)
-(;spectral_transform,geometry) = model_setup.geospectral
+SpeedyWeather.time_stepping!(prog_vars,diag_vars,model_setup) # evolve the state of speedy, so that we also have nonzero entries for everything
+
+# time step a bit
+
+prog_vars_layer = prog_vars.layers[1].leapfrog[1]
+spectral_transform = model_setup.spectral_transform
+geometry = model_setup.geometry
 (;radius_earth) = model_setup.parameters
 
 # use only one leapfrog index from vorticitiy
-vor = view(prog_vars.vor,:,:,1,:)    
+vor = prog_vars_layer.vor    
 
 # some large scale initial conditions (zero mean with all l=0 modes being zero)
 lmax,mmax = 50,50
-vor[2:lmax,2:mmax,:] = randn(Complex{NF},lmax-1,mmax-1,
+vor[2:lmax,2:mmax] = randn(Complex{NF},lmax-1,mmax-1,
                                         model_setup.parameters.nlev)
 SpeedyWeather.spectral_truncation!(vor,lmax,mmax)   # set upper triangle to 0
 
 vor_start = deepcopy(vor) # copy this for the comparison 
 
 # convert spectral vorticity to spectral stream function and to spectral u,v and transform to u_grid, v_grid
-SpeedyWeather.gridded!(diag_vars,prog_vars,model_setup)
-(;U_grid, V_grid) = diag_vars.grid_variables    # retrieve u_grid, v_grid from struct
+#SpeedyWeather.gridded!(diag_vars,prog_vars,model_setup)
+(;U_grid, V_grid) = diag_vars.layers[1].grid_variables    # retrieve u_grid, v_grid from struct
 u = zero(vor)
 v = zero(vor)
 
 SpeedyWeather.scale_coslat!(V_grid,geometry)
 
 # I copy here for the other two libraries (and transpose because both net latxlon)
-u_grid_copy = deepcopy(permutedims(U_grid, (2,1,3)))
-v_grid_copy = deepcopy(permutedims(V_grid, (2,1,3)))
+u_grid_copy = deepcopy(permutedims(U_grid, (2,1)))
+v_grid_copy = deepcopy(permutedims(V_grid, (2,1)))
 
 SpeedyWeather.spectral!(u,U_grid,spectral_transform)
 SpeedyWeather.spectral!(v,V_grid,spectral_transform)
 
 # zonal gradient of v, meridional gradient of u for vorticity
-(;coslat_u,coslat_v) = diag_vars.intermediate_variables
-SpeedyWeather.gradient_longitude!(coslat_v,v,radius_earth)
-SpeedyWeather.gradient_latitude!(coslat_u,u,spectral_transform)
+(;u_coslat,v_coslat) = diag_vars.layers[1].dynamics_variables
+SpeedyWeather.gradient_longitude!(v_coslat,v,radius_earth)
+SpeedyWeather.gradient_latitude!(u_coslat,u,spectral_transform)
 
 
 ## pyspharm , import and gradient
@@ -179,27 +187,27 @@ g = QG3.grid(p, "gaussian", 8)
 Pn, Pold = compare_legendre(p.L, p.M, p.μ) 
 # sign is different here for some, still CS phase?
 
-qg3_u = transform_SH(permutedims(u_grid_copy,(3,1,2))[1,:,:], g)
-qg3_v = transform_SH(permutedims(v_grid_copy,(3,1,2))[1,:,:], g)
+qg3_u = transform_SH(u_grid_copy, g)
+qg3_v = transform_SH(v_grid_copy, g)
 
 qg3_v_dlon = QG3.SHtoGrid_dλ(qg3_v, g)
 qg3_u_dlat = QG3.SHtoGrid_dϕ(qg3_u, g)
 
 
 # compare QG3.jl to SpeedyWeather.jl 
-heatmap(permutedims(u_grid_copy,(3,1,2))[1,:,:])
-heatmap(permutedims(v_grid_copy,(3,1,2))[1,:,:])
+heatmap(u_grid_copy)
+heatmap(v_grid_copy)
 
 heatmap(qg3_v_dlon)
-heatmap(SpeedyWeather.gridded(coslat_v[:,:,1])')
+heatmap(SpeedyWeather.gridded(v_coslat[:,:,1])')
 # different scaling due to R 
 
 # here Speedy returns an additional factor cos(lat) (and also R)
 heatmap(qg3_u_dlat)
 
-heatmap(SpeedyWeather.gridded(coslat_u[:,:,1])')
+heatmap(SpeedyWeather.gridded(u_coslat[:,:,1])')
 
-dlat_u = deepcopy(SpeedyWeather.gridded(coslat_u[:,:,1]))
+dlat_u = deepcopy(SpeedyWeather.gridded(u_coslat[:,:,1]))
 SpeedyWeather.scale_coslat⁻¹!(dlat_u,geometry)
 heatmap(dlat_u')
 
@@ -210,10 +218,10 @@ heatmap(qg3_u_dlat - dlat_u')
 # pyspharm computes the gradient in SPH, this has additional terms due to $$nabla = 1/(r \sin\theta) \partial_\lambda \mathbf{i} + 1/r \partial_\theta \mathbf{j} + \partial_r \mathbf{k}$$ and $$\nabla\psi = \mathbf{v}$
 
 
-heatmap(py_u_dlat[:,:,1])
+heatmap(py_u_dlat)
 heatmap(qg3_u_dlat)
 
-heatmap(py_u_dlat[:,:,1] - qg3_u_dlat)
+heatmap(py_u_dlat - qg3_u_dlat)
 
 
 sinθ = similar(qg3_u_dlat)
@@ -221,7 +229,7 @@ for i_l = 1:size(sinθ,1)
     sinθ[i_l,:] .= sin(p.θ[i_l])
 end
 
-heatmap(py_v_dlon[:,:,1] .* sinθ)
+heatmap(py_v_dlon .* sinθ)
 heatmap(qg3_v_dlon)
 
-heatmap(py_v_dlon[:,:,1] .* sinθ - qg3_v_dlon)
+heatmap(py_v_dlon .* sinθ - qg3_v_dlon)
