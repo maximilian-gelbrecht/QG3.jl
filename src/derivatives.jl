@@ -183,3 +183,19 @@ SHtoGrid_dθ(ψ, m::QG3Model{T}) where {T} = SHtoGrid_dθ(ψ, m.g.dμ)
 SHtoGrid_dθ(ψ, g::GaussianGrid{T}) where {T} = SHtoGrid_dθ(ψ, g.dμ)
 SHtoGrid_dθ(ψ::AbstractArray{T,2}, d::AbstractμDerivative) where {T} = d.msinθ .* SHtoGrid_dμ(ψ, d)
 SHtoGrid_dθ(ψ::AbstractArray{T,3}, d::AbstractμDerivative) where {T} = d.msinθ_3d .* SHtoGrid_dμ(ψ, d)
+
+"""
+    Δ(ψ::AbstractArray, m::QG3Model{T})
+
+Apply the Laplacian. Also serves to convert regular vorticity (not the quasigeostrophic one) to streamfunction) 
+"""
+Δ(ψ::AbstractArray{T,3}, m::QG3Model{T}) where T = m.Δ_3d .* ψ
+Δ(ψ::AbstractArray{T,2}, m::QG3Model{T}) where T = m.Δ .* ψ
+
+"""
+    Δ⁻¹(ψ::AbstractArray, m::QG3Model{T})
+
+Apply the inverse Laplacian. Also serves to convert the streamfunction to regular vorticity 
+"""
+Δ⁻¹(ψ::AbstractArray{T,2}, m::QG3Model{T}) where T = ψ ./ m.Δ
+Δ⁻¹(ψ::AbstractArray{T,3}, m::QG3Model{T}) where T = ψ ./ m.Δ_3d
