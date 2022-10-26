@@ -199,3 +199,11 @@ Apply the inverse Laplacian. Also serves to convert the streamfunction to regula
 """
 Δ⁻¹(ψ::AbstractArray{T,2}, m::QG3Model{T}) where T = ψ ./ m.Δ
 Δ⁻¹(ψ::AbstractArray{T,3}, m::QG3Model{T}) where T = ψ ./ m.Δ_3d
+
+"""
+    cH∇8(q::AbstractArray{T,N}, m::QG3Model{T})
+
+Apply the hyperdiffusion weighted with the diffusion coefficient to the input
+"""
+cH∇8(q::AbstractArray{T,2}, m::QG3Model{T}) where T = m.cH∇8 .* q
+cH∇8_3d(q::AbstractArray{T,3}, m::QG3Model{T}) where T = m.cH∇8_3d .* q
