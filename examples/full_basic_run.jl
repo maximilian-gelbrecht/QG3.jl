@@ -80,7 +80,36 @@ using Plots
 
 PLOT = true
 
+
+if PLOT
+    ilvl = 1  # choose lvl to plot here
+
+    clims = (-1.1*maximum(abs.(ψ[ilvl,:,:,:])),1.1*maximum(abs.(ψ[ilvl,:,:,:]))) # get colormap maxima
+
+    plot_times = 0:(t_end)/200:t_end  # choose timesteps to plot
+
+    anim = @animate for (iit,it) ∈ enumerate(plot_times)   
+        heatmap(ψ[ilvl,:,:,iit], c=:balance, title=string("time=",it,"   - ",it*qg3p.p.time_unit," d"), clims=clims)
+    end
+    gif(anim, "data_fps20_ψ.gif", fps = 20)
+end
+
 """
+
+if PLOT
+    ilvl = 1  # choose lvl to plot here
+
+    clims = (-1.1*maximum(abs.(ψ[ilvl,:,:,:])),1.1*maximum(abs.(ψ[ilvl,:,:,:]))) # get colormap maxima
+
+    plot_times = 0:(t_end)/500:500.  # choose timesteps to plot
+
+    anim = @animate for (iit,it) ∈ enumerate(plot_times)
+        sf_plot = transform_grid(qprimetoψ(qg3p, sol(Float32(it))),qg3p)
+        heatmap(sf_plot[ilvl,:,:], c=:balance, title=string("time=",it,"   - ",it*qg3p.p.time_unit," d"), clims=clims)
+    end
+    gif(anim, "anim_fps20_ψ.gif", fps = 20)
+end
+
  if PLOT
         ilvl = 1  # choose lvl to plot here
 
@@ -89,11 +118,12 @@ PLOT = true
         plot_times = 0:(t_end)/200:t_end  # choose timesteps to plot
 
         anim = @animate for (iit,it) ∈ enumerate(plot_times)
-            heatmap(ψ[ilvl,:,:,iit], c=:balance, title=string("time=",it,"   - ",it*qg3p.p.time_unit," d"), clims=clims)
+            u_plot = QG3.u(ψ_SH[:,:,:,iit], qg3p)
+            heatmap(u_plot[ilvl,:,:], c=:balance, title=string("u wind time=",it,"   - ",it*qg3p.p.time_unit," d"), clims=clims)
         end
-        gif(anim, "data_fps20.gif", fps = 20)
+        gif(anim, "data_fps20_u1.gif", fps = 20)
  end
-"""
+
 
 if PLOT
         ilvl = 1  # choose lvl to plot here
@@ -103,8 +133,38 @@ if PLOT
         plot_times = 0:(t_end)/500:500.  # choose timesteps to plot
 
         anim = @animate for (iit,it) ∈ enumerate(plot_times)
-            sf_plot = transform_grid(qprimetoψ(qg3p, sol(Float32(it))),qg3p)
-            heatmap(sf_plot[ilvl,:,:], c=:balance, title=string("time=",it,"   - ",it*qg3p.p.time_unit," d"), clims=clims)
+            u_plot = QG3.u(qprimetoψ(qg3p, sol(Float32(it))),qg3p)
+            heatmap(u_plot[ilvl,:,:], c=:balance, title=string("u wind time=",it,"   - ",it*qg3p.p.time_unit," d"), clims=clims)
         end
-        gif(anim, "anim_fps20.gif", fps = 20)
+        gif(anim, "anim_fps20_u1.gif", fps = 20)
  end
+
+ if PLOT
+    ilvl = 1  # choose lvl to plot here
+
+    clims = (-1.1*maximum(abs.(ψ[ilvl,:,:,:])),1.1*maximum(abs.(ψ[ilvl,:,:,:]))) # get colormap maxima
+
+    plot_times = 0:(t_end)/200:t_end  # choose timesteps to plot
+
+    anim = @animate for (iit,it) ∈ enumerate(plot_times)
+        v_plot = QG3.v(ψ_SH[ilvl,:,:,iit], qg3p)
+        heatmap(v_plot, c=:balance, title=string("v wind time=",it,"   - ",it*qg3p.p.time_unit," d"), clims=clims)
+    end
+    gif(anim, "data_fps20_v1.gif", fps = 20)
+end
+
+
+if PLOT
+    ilvl = 1  # choose lvl to plot here
+
+    clims = (-1.1*maximum(abs.(ψ[ilvl,:,:,:])),1.1*maximum(abs.(ψ[ilvl,:,:,:]))) # get colormap maxima
+
+    plot_times = 0:(t_end)/500:500.  # choose timesteps to plot
+
+    anim = @animate for (iit,it) ∈ enumerate(plot_times)
+        v_plot = QG3.v(qprimetoψ(qg3p, sol(Float32(it)))[ilvl,:,:],qg3p)
+        heatmap(v_plot, c=:balance, title=string("v wind time=",it,"   - ",it*qg3p.p.time_unit," d"), clims=clims)
+    end
+    gif(anim, "anim_fps20_v1.gif", fps = 20)
+end
+"""
