@@ -198,6 +198,16 @@ function compute_Δ(p::QG3ModelParameters{T}) where T<:Number
     return -l .* (l .+ 1)
 end
 
+"""
+Pre-compute the inverse Laplacian in Spherical Harmonics, follows the matrix convention of FastTransforms.jl
+"""
+function compute_Δ⁻¹(p::QG3ModelParameters{T}) where T<:Number
+    Δ⁻¹ = inv.(compute_Δ(p))
+    Δ⁻¹[isinf.(Δ⁻¹)] .= T(0) # set integration constant and spurious elements zero 
+    return Δ⁻¹
+end
+
+
 """"
 Pre-compute the 8-th derivative in Spherical Harmonics
 """

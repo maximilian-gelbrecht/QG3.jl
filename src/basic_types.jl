@@ -196,7 +196,9 @@ struct QG3Model{T} <: AbstractQG3Model{T}
     cosϕ::AbstractArray{T,2}
     acosϕi::AbstractArray{T,2}
     Δ::AbstractArray{T,2}
-    Δ_3d
+    Δ_3d::AbstractArray{T,3}
+    Δ⁻¹::AbstractArray{T,2}
+    Δ⁻¹_3d::AbstractArray{T,3}
     Tψq
     Tqψ
     f
@@ -232,7 +234,8 @@ function QG3Model(p::QG3ModelParameters; N_levels::Integer=3)
     g = grid(p, p.gridtype, N_levels)
 
     Δ = cuda_used[] ? reorder_SH_gpu(compute_Δ(p), p) : compute_Δ(p)
-
+    Δ⁻¹ = cuda_used[] ? reorder_SH_gpu(compute_Δ⁻¹(p), p) : compute_Δ⁻¹(p)
+    
     Tqψ, Tψq = compute_batched_ψq_transform_matrices(p, Δ)
     Tqψ, Tψq = togpu(Tqψ), togpu(Tψq)
 
@@ -251,7 +254,7 @@ function QG3Model(p::QG3ModelParameters; N_levels::Integer=3)
     ∂k∂λ = transform_grid(SHtoSH_dφ(k_SH, g.dλ), g) ./ (cosϕ .^ 2)
     ∂k∂ϕ = SHtoGrid_dϕ(k_SH, g.dμ)
 
-    return QG3Model(p, g, k, TRcoeffs, TR_matrix, cosϕ, acosϕi, Δ, make3d(Δ), Tψq, Tqψ, f, f_J3, ∇8, make3d(∇8), ∂k∂ϕ, ∂k∂μ, ∂k∂λ)
+    return QG3Model(p, g, k, TRcoeffs, TR_matrix, cosϕ, acosϕi, Δ, make3d(Δ), Δ⁻¹, make3d(Δ⁻¹), Tψq, Tqψ, f, f_J3, ∇8, make3d(∇8), ∂k∂ϕ, ∂k∂μ, ∂k∂λ)
 end
 
 show(io::IO, m::QG3Model{T}) where {T} = print(io, "Pre-computed QG3Model{",T,"} with ",m.p, " on a",m.g, "with gridsize ",m.g.size_SH," and L_max",m.p.L - 1," on ", isongpu_string(m)) 
