@@ -47,12 +47,14 @@ Compute the Jacobian determinant from ψ and q in μ,λ coordinates, J = ∂ψ/�
 The last term ∂ψ/∂λ accounts for the planetery vorticity, actually it is 2Ω ∂ψ/∂λ, but 2Ω == 1, (write q = q' + 2Ωμ to proof it)
 
 """
-J(ψ::AbstractArray{T,2}, q::AbstractArray{T,2}, m::QG3Model{T}) where T<:Number = transform_SH(SHtoGrid_dμ(ψ, m).*SHtoGrid_dλ(q, m) - (SHtoGrid_dλ(ψ, m).*SHtoGrid_dμ(q, m)), m) - SHtoSH_dλ(ψ, m)
+J(ψ::AbstractArray{T,2}, q::AbstractArray{T,2}, g::AbstractGridType{T}) where T<:Number = transform_SH(SHtoGrid_dμ(ψ, g).*SHtoGrid_dλ(q, g) - (SHtoGrid_dλ(ψ, g).*SHtoGrid_dμ(q, g)), g) - SHtoSH_dλ(ψ, g)
+J(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, m::QG3Model{T}) where {T,N} = J(ψ, q, m.g)
 
 """
 Compute the Jacobian determinant from ψ and q in μ,λ coordinates without the planetary vorticity, as used in computing the eddy/transient forcing
 """
-J_F(ψ, q, m::QG3Model{T}) where T<:Number = transform_SH(SHtoGrid_dμ(ψ, m).*SHtoGrid_dλ(q, m) - (SHtoGrid_dλ(ψ, m).*SHtoGrid_dμ(q, m)), m)
+J_F(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T}) where {T,N} = transform_SH(SHtoGrid_dμ(ψ, g).*SHtoGrid_dλ(q, g) - (SHtoGrid_dλ(ψ, g).*SHtoGrid_dμ(q, g)), g)
+J_F(ψ, q, m::QG3Model{T}) where T = J_F(ψ, q, m.g)
 
 """
 For the Jacobian at 850hPa, q = q' + f(1+h/H_0) = q' + f + f*h/H_0, so that the thrid term has to be added.
