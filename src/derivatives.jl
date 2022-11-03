@@ -197,8 +197,8 @@ Apply the Laplacian. Also serves to convert regular vorticity (not the quasigeos
 
 Apply the inverse Laplacian. Also serves to convert the streamfunction to regular vorticity 
 """
-Δ⁻¹(ψ::AbstractArray{T,2}, m::QG3Model{T}) where T = ψ ./ m.Δ
-Δ⁻¹(ψ::AbstractArray{T,3}, m::QG3Model{T}) where T = ψ ./ m.Δ_3d
+Δ⁻¹(ψ::AbstractArray{T,2}, m::QG3Model{T}) where T = m.Δ⁻¹ .* ψ
+Δ⁻¹(ψ::AbstractArray{T,3}, m::QG3Model{T}) where T = m.Δ⁻¹_3d .* ψ 
 
 """
     cH∇8(q::AbstractArray{T,N}, m::QG3Model{T})
