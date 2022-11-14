@@ -63,6 +63,11 @@ Computes the Jacobian (without the planetary voriticity), input SPH, output Grid
 """
 J_F_Grid(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T}) where {T,N} = SHtoGrid_dμ(ψ, g).*SHtoGrid_dλ(q, g) - SHtoGrid_dλ(ψ, g).*SHtoGrid_dμ(q, g)
 
+
+J_F_Grid_SI(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T}, R::T) where {T,N} = SHtoGrid_dμ(ψ, g).*SHtoGrid_dλ(q, g) - SHtoGrid_dλ(ψ, g).*SHtoGrid_dμ(q, g) ./ (R^2)
+J_F_SI(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T}, R::T) where {T,N} = transform_SH(SHtoGrid_dμ(ψ, g).*SHtoGrid_dλ(q, g) - (SHtoGrid_dλ(ψ, g).*SHtoGrid_dμ(q, g)), g) ./ (R^2)
+J_SI(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T}, R::T, Ω::T) where {T,N} = J_F_SI(ψ, q, g, R) - T(2).*Ω.*SHtoSH_dλ(ψ, g) ./ (R^2)
+
 """
 For the Jacobian at 850hPa, q = q' + f(1+h/H_0) = q' + f + f*h/H_0, so that the thrid term has to be added.
 """
