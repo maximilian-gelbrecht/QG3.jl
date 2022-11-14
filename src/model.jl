@@ -57,6 +57,13 @@ J_F(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T}) where
 J_F(ψ, q, m::QG3Model{T}) where T = J_F(ψ, q, m.g)
 
 """
+    J_F_Grid(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T})
+
+Computes the Jacobian (without the planetary voriticity), input SPH, output Grid space 
+"""
+J_F_Grid(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T}) where {T,N} = SHtoGrid_dμ(ψ, g).*SHtoGrid_dλ(q, g) - SHtoGrid_dλ(ψ, g).*SHtoGrid_dμ(q, g)
+
+"""
 For the Jacobian at 850hPa, q = q' + f(1+h/H_0) = q' + f + f*h/H_0, so that the thrid term has to be added.
 """
 J3(ψ::AbstractArray{T,2}, q::AbstractArray{T,2}, m::QG3Model{T}) where T<:Number = J(ψ, q + (m.f[3,:,:] - m.f[2,:,:]), m)
