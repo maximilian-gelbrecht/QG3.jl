@@ -8,7 +8,7 @@ J(ψ::AbstractArray{T,3}, q::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number
 """
 Horizontal diffusion, q' is anomolous pv (without coriolis) 3D Fields
 """
-H(qprime::AbstractArray{T,3}, m::QG3Model{T}) where T<: Number = (m.cH∇8_3d .* qprime)
+H(qprime::AbstractArray{T,3}, m::QG3Model{T}) where T<: Number = cH∇8(qprime, m)
 
 """
 Temperature relaxation of all levels
@@ -19,7 +19,6 @@ TR(ψ::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = reshape(batched_vec
 Dissipiation of all levels, 850hPa has additional Ekman dissipation
 """
 D(ψ::AbstractArray{T,3}, q::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = add_to_level(TR(ψ, m) + H(q, m), EK(ψ[3,:,:], m), 3)
-
 
 """
 Differentiable and GPU compatible way of adding only to one of the levels of the model

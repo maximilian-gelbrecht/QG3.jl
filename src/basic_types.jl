@@ -120,12 +120,16 @@ Struct for the transforms and derivates of a Gaussian Grid
 * `SHtoG::GaussianSHtoGridTransform`
 * `dμ::GaussianGrid_dμ`
 * `dλ::Derivative_dλ`
+* `Δ::Laplacian`
+* `∇8::Hyperdiffusion`
 """
 struct GaussianGrid{T, onGPU} <: AbstractGridType{T, onGPU}
     GtoSH
     SHtoG
     dμ
     dλ
+    Δ
+    ∇8
     size_SH
     size_grid
 end
@@ -138,7 +142,7 @@ show(io::IO, g::GaussianGrid{T, false}) where {T} = print(io," Gaussian Grid on 
 
 Convience constructor for the [`AbstractGridType`](@ref) based on the parameters set in `p`.
 """
-function grid(p::QG3ModelParameters{T}, gridtype::String, N_level::Int=3) where T<:Number
+function grid(p::QG3ModelParameters{T}, gridtype::String, N_level::Int=3; kwargs...) where T<:Number
 
     if gridtype=="regular"
         
@@ -150,11 +154,13 @@ function grid(p::QG3ModelParameters{T}, gridtype::String, N_level::Int=3) where 
         SHtoG = SHtoGaussianGridTransform(p, N_level)
         dμ = GaussianGrid_dμ(p, N_level)
         dλ = Derivative_dλ(p)
+        Δ = Laplacian(p; kwargs...)
+        ∇8 = Hyperdiffusion(p; kwargs...)
 
         size_grid = (p.N_lats, p.N_lons)
         size_SH = cuda_used[] ? (p.N_lats, p.N_lons+2) : (p.L, p.M)
 
-        return GaussianGrid{T, cuda_used[]}(GtoSH, SHtoG, dμ, dλ, size_SH, size_grid)
+        return GaussianGrid{T, cuda_used[]}(GtoSH, SHtoG, dμ, dλ,  Δ, ∇8, size_SH, size_grid)
     else
         error("Unknown gridtype.")
     end
@@ -175,13 +181,10 @@ Holds all parameter and grid information, plus additional pre-computed fields th
 * `TR_matrix` Matrix for temperature relaxation (3d version)
 * `cosϕ::AbstractArray{T,2}` cos(latitude) pre computed
 * `acosϕi::AbstractArray{T,2}` inverse of a*cos(latitude) pre computed
-* `Δ::AbstractArray{T,2}` # laplace operator in spherical harmonical coordinates
 * `Tψq` matrix used for transforming stream function to voriticy   q = Tψq * ψ + F
 * `Tqψ``inverse of Tψq   ψ = Tqψ*(q - F)
 * `f` modified coriolis vector used in transforming stream function to vorticity
-* `J_f3` coriolis contribution to Jacobian at 850hPa
-* `cH∇8` cH * 8-th order gradient for horizonatal diffusion
-* `cH∇8_3d` cH * 8-th order gradient for horizonatal diffusion for 3d field
+* `f_J3` coriolis contribution to Jacobian at 850hPa
 * `∂k∂ϕ` derivates of drag coefficients, pre computed for Ekman dissipation
 * `∂k∂μ`
 * `∂k∂λ` includes 1/cos^2ϕ (for Ekman dissipiation computation)
@@ -195,31 +198,25 @@ struct QG3Model{T} <: AbstractQG3Model{T}
     TR_matrix
     cosϕ::AbstractArray{T,2}
     acosϕi::AbstractArray{T,2}
-    Δ::AbstractArray{T,2}
-    Δ_3d::AbstractArray{T,3}
-    Δ⁻¹::AbstractArray{T,2}
-    Δ⁻¹_3d::AbstractArray{T,3}
     Tψq
     Tqψ
     f
     f_J3
-    cH∇8
-    cH∇8_3d
     ∂k∂ϕ
     ∂k∂μ
     ∂k∂λ
 end
 
 """
-    QG3Model(p::QG3ModelParameters; N_level::Integer=3)
+    QG3Model(p::QG3ModelParameters; N_level::Integer=3, SI::Bool=false)
 
 Routine that pre computes the QG3 Model and returns a QG3Model struct with all precomputed fields except for the forcing.
 
 The pre-computation is always done on CPU due to scalar indexing being used, if a GPU is avaible the final result is then transferred to the GPU.
 
-If N_level is set to values other than three, the pre-computations for the transforms and derivatives are computed with N_level levels, but the full model will not be working! This is just for accessing the transforms and derivatives
+If `N_level`` is set to values other than three, the pre-computations for the transforms and derivatives are computed with N_level levels, but the full model will not be working! This is just for accessing the transforms and derivatives
 """
-function QG3Model(p::QG3ModelParameters; N_levels::Integer=3)
+function QG3Model(p::QG3ModelParameters; N_levels::Integer=3, SI::Bool=false)
     
     if N_levels != 3
         @warn "N_level is not set to 3, the full model will not be functioning!" 
@@ -231,12 +228,9 @@ function QG3Model(p::QG3ModelParameters; N_levels::Integer=3)
     cosϕ = togpu(compute_cosϕ(p))
     acosϕi = togpu(compute_acosϕi(p))
 
-    g = grid(p, p.gridtype, N_levels)
+    g = grid(p, p.gridtype, N_levels; hyperdiffusion_scale=p.cH)
 
-    Δ = cuda_used[] ? reorder_SH_gpu(compute_Δ(p), p) : compute_Δ(p)
-    Δ⁻¹ = cuda_used[] ? reorder_SH_gpu(compute_Δ⁻¹(p), p) : compute_Δ⁻¹(p)
-    
-    Tqψ, Tψq = compute_batched_ψq_transform_matrices(p, Δ)
+    Tqψ, Tψq = compute_batched_ψq_transform_matrices(p, g.Δ)
     Tqψ, Tψq = togpu(Tqψ), togpu(Tψq)
 
     TRcoeffs = togpu(compute_TR(p))
@@ -244,9 +238,6 @@ function QG3Model(p::QG3ModelParameters; N_levels::Integer=3)
 
     TR_matrix = togpu(compute_batched_TR_matrix(p))
     f_J3 = togpu(compute_f_J3(p, f))
-
-    ∇8 = cuda_used[] ? reorder_SH_gpu(compute_∇8(p), p) : compute_∇8(p)
-    ∇8 *= p.cH
     
     k_SH = transform_SH(k, g)
 
@@ -254,7 +245,7 @@ function QG3Model(p::QG3ModelParameters; N_levels::Integer=3)
     ∂k∂λ = transform_grid(SHtoSH_dφ(k_SH, g.dλ), g) ./ (cosϕ .^ 2)
     ∂k∂ϕ = SHtoGrid_dϕ(k_SH, g.dμ)
 
-    return QG3Model(p, g, k, TRcoeffs, TR_matrix, cosϕ, acosϕi, Δ, make3d(Δ), Δ⁻¹, make3d(Δ⁻¹), Tψq, Tqψ, f, f_J3, ∇8, make3d(∇8), ∂k∂ϕ, ∂k∂μ, ∂k∂λ)
+    return QG3Model(p, g, k, TRcoeffs, TR_matrix, cosϕ, acosϕi, Tψq, Tqψ, f, f_J3, ∂k∂ϕ, ∂k∂μ, ∂k∂λ)
 end
 
 show(io::IO, m::QG3Model{T}) where {T} = print(io, "Pre-computed QG3Model{",T,"} with ",m.p, " on a",m.g, "with gridsize ",m.g.size_SH," and L_max",m.p.L - 1," on ", isongpu_string(m)) 

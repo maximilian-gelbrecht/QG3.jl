@@ -26,7 +26,7 @@ q = Tψq * ψ + f
 # For l=0 the matrix is singular. In the fortran code they set q to something which for me does not make sense. Here Tψq(l=0) is just 1, so that transforming back and forth recovers the correct ψ. This makes sense in my eyes because q is only ever used for its spatial derivatives, all of which are 0 for l=0.
 
 """
-function compute_ψq_transform_matrices(p::QG3ModelParameters{T}, Δ) where T<:Number
+function compute_ψq_transform_matrices(p::QG3ModelParameters{T}, L::Laplacian{T}) where T<:Number
     Tqψ = zeros(T, p.L, 3,3)
     Tψq = zeros(T, p.L, 3,3)
 
@@ -36,15 +36,15 @@ function compute_ψq_transform_matrices(p::QG3ModelParameters{T}, Δ) where T<:N
     Tψq[1,3,3] = T(1)
     Tqψ[1,:,:] = inv(Tψq[1,:,:])
     for l ∈ 2:p.L # this is actually l=(l+1) in terms of SH numbers due to 1-indexing
-        Tψq[l,1,1] = Δ[l,1] - p.R1i
+        Tψq[l,1,1] = L.Δ[l,1] - p.R1i
         Tψq[l,1,2] = p.R1i
 
         Tψq[l,2,1] = p.R1i
-        Tψq[l,2,2] = Δ[l,1] - p.R1i - p.R2i
+        Tψq[l,2,2] = L.Δ[l,1] - p.R1i - p.R2i
         Tψq[l,2,3] = p.R2i
 
         Tψq[l,3,2] = p.R2i
-        Tψq[l,3,3] = Δ[l,1] - p.R2i
+        Tψq[l,3,3] = L.Δ[l,1] - p.R2i
 
         Tqψ[l,:,:] = inv(Tψq[l,:,:])
     end
@@ -57,8 +57,8 @@ end
 
 prepares the transform from q to ψ and back for a batched matrix vector multiply, see also (@ref)[`compute_ψq_transform_matrices`]
 """
-function compute_batched_ψq_transform_matrices(p::QG3ModelParameters{T}, Δ) where T<:Number
-    Tqψ, Tψq = compute_ψq_transform_matrices(p, Δ)
+function compute_batched_ψq_transform_matrices(p::QG3ModelParameters{T}, L::Laplacian{T}) where T<:Number
+    Tqψ, Tψq = compute_ψq_transform_matrices(p, L)
     return compute_batched_ψq_transform_matrices(p, Tqψ, Tψq)
 end
 

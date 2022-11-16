@@ -185,25 +185,86 @@ SHtoGrid_dθ(ψ::AbstractArray{T,2}, d::AbstractμDerivative) where {T} = d.msin
 SHtoGrid_dθ(ψ::AbstractArray{T,3}, d::AbstractμDerivative) where {T} = d.msinθ_3d .* SHtoGrid_dμ(ψ, d)
 
 """
+    Laplacian(p::QG3ModelParameters{T}; init_inverse=false, R::T=T(1)) where T
+
+Initializes the `Laplacian` in spherical harmonics and if `init_inverse==true` also its inverse
+
+Apply the Laplacian with the functions (@ref)[`Δ`] and (@ref)[`Δ⁻¹`]
+"""
+struct Laplacian{T,onGPU} <: AbstractDerivative{onGPU}
+    Δ::AbstractArray{T,2}
+    Δ_3d::AbstractArray{T,3}
+    Δ⁻¹::AbstractArray{T,2}
+    Δ⁻¹_3d::AbstractArray{T,3}
+end 
+
+function Laplacian(p::QG3ModelParameters{T}; init_inverse=false, R::T=T(1), kwargs...) where T
+    
+    Δ = cuda_used[] ? reorder_SH_gpu(compute_Δ(p), p) : compute_Δ(p)
+    Δ ./= (R*R)
+    if init_inverse
+        Δ⁻¹ = cuda_used[] ? reorder_SH_gpu(compute_Δ⁻¹(p), p) : compute_Δ⁻¹(p)
+        Δ⁻¹ .*= (R*R)
+        Δ⁻¹_3d = make3d(Δ⁻¹)
+    else 
+        Δ⁻¹ = Array{T,2}(undef,0,0)
+        Δ⁻¹_3d = Array{T,3}(undef,0,0,0)
+    end 
+        
+    Laplacian{T, cuda_used[]}(Δ, make3d(Δ), Δ⁻¹, Δ⁻¹_3d)
+end 
+
+"""
+    Δ(ψ::AbstractArray, L::Laplacian{T})
     Δ(ψ::AbstractArray, m::QG3Model{T})
 
 Apply the Laplacian. Also serves to convert regular vorticity (not the quasigeostrophic one) to streamfunction) 
 """
-Δ(ψ::AbstractArray{T,3}, m::QG3Model{T}) where T = m.Δ_3d .* ψ
-Δ(ψ::AbstractArray{T,2}, m::QG3Model{T}) where T = m.Δ .* ψ
+Δ(ψ::AbstractArray{T,3}, L::Laplacian{T}) where T = L.Δ_3d .* ψ
+Δ(ψ::AbstractArray{T,2}, L::Laplacian{T}) where T = L.Δ .* ψ
+
+Δ(ψ::AbstractArray{T,2}, g::AbstractGridType{T}) where T = Δ(ψ, g.Δ)
+Δ(ψ::AbstractArray{T,N}, m::QG3Model{T}) where {T,N} = Δ(ψ, m.g)
 
 """
     Δ⁻¹(ψ::AbstractArray, m::QG3Model{T})
 
 Apply the inverse Laplacian. Also serves to convert the streamfunction to regular vorticity 
 """
-Δ⁻¹(ψ::AbstractArray{T,2}, m::QG3Model{T}) where T = m.Δ⁻¹ .* ψ
-Δ⁻¹(ψ::AbstractArray{T,3}, m::QG3Model{T}) where T = m.Δ⁻¹_3d .* ψ 
+Δ⁻¹(ψ::AbstractArray{T,3}, L::Laplacian{T}) where T = L.Δ⁻¹_3d .* ψ
+Δ⁻¹(ψ::AbstractArray{T,2}, L::Laplacian{T}) where T = L.Δ⁻¹ .* ψ 
+
+Δ⁻¹(ψ::AbstractArray{T,N}, g::AbstractGridType{T}) where {T,N} = Δ⁻¹(ψ, g.Δ)
+Δ⁻¹(ψ::AbstractArray{T,N}, m::QG3Model{T}) where {T,N} = Δ⁻¹(ψ, m.g) 
 
 """
-    cH∇8(q::AbstractArray{T,N}, m::QG3Model{T})
+    Hyperdiffusion(p::QG3ModelParameters{T}; scale::T=T(1)) where T
 
-Apply the hyperdiffusion weighted with the diffusion coefficient to the input
+Initializes the Hyperdiffusion / horizonatal diffusion operator. 
+
+Apply it via the (@ref)[`∇8`] functions.
 """
-cH∇8(q::AbstractArray{T,2}, m::QG3Model{T}) where T = m.cH∇8 .* q
-cH∇8(q::AbstractArray{T,3}, m::QG3Model{T}) where T = m.cH∇8_3d .* q
+struct Hyperdiffusion{T,onGPU} <: AbstractDerivative{onGPU}
+    ∇8::AbstractArray{T,2} 
+    ∇8_3d::AbstractArray{T,3}
+end 
+
+function Hyperdiffusion(p::QG3ModelParameters{T}; hyperdiffusion_scale::T=T(1), kwargs...) where T
+
+    ∇8 = cuda_used[] ? reorder_SH_gpu(compute_∇8(p), p) : compute_∇8(p)
+    ∇8 .*= hyperdiffusion_scale 
+
+    Hyperdiffusion{T, cuda_used[]}(∇8, make3d(∇8))
+end 
+
+"""
+    ∇8(q::AbstractArray{T,N}, H::Hyperdiffusion{T})
+
+Apply the hyperdiffusion to the input
+"""
+∇8(q::AbstractArray{T,2}, H::Hyperdiffusion{T}) where T = H.∇8 .* q
+∇8(q::AbstractArray{T,3}, H::Hyperdiffusion{T}) where T = H.∇8_3d .* q
+∇8(q::AbstractArray{T,N}, g::AbstractGridType{T}) where {T,N} = ∇8(q, g.∇8)
+∇8(q::AbstractArray{T,N}, m::QG3Model{T}) where {T,N} = ∇8(q, m.g)
+
+cH∇8(varargs...) = ∇8(varargs...)

@@ -81,7 +81,7 @@ Ekman dissipation
 
  m.∂k∂λ  includes 1/cos^2ϕ
 """
-EK(ψ::AbstractArray{T,2}, m::QG3Model{T}) where T<:Number = transform_SH(SHtoGrid_dϕ(ψ, m) .* m.∂k∂ϕ + SHtoGrid_dλ(ψ,m) .* m.∂k∂λ + m.k .* transform_grid(m.Δ .* ψ, m), m)
+EK(ψ::AbstractArray{T,2}, m::QG3Model{T}) where T<:Number = transform_SH(SHtoGrid_dϕ(ψ, m) .* m.∂k∂ϕ + SHtoGrid_dλ(ψ,m) .* m.∂k∂λ + m.k .* transform_grid(Δ(ψ,m), m), m)
 
 
 D1(ψ::AbstractArray{T,3}, qprime::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = -TR12(m, ψ) + H(qprime, 1, m)
@@ -98,7 +98,7 @@ TR23(m::QG3Model{T}, ψ::AbstractArray{T,3}) where T<:Number = m.TRcoeffs[2,:,:]
 """
 Horizontal diffusion, q' is anomolous pv (without coriolis) 2D Fields m.cH∇8 = m.p.cH * m.∇8
 """
-H(qprime::AbstractArray{T,3}, i::Int, m::QG3Model{T}) where T<: Number = m.cH∇8 .* qprime[i,:,:]
+H(qprime::AbstractArray{T,3}, i::Int, m::QG3Model{T}) where T<: Number = cH∇8(qprime[i,:,:], m)
 
 u(ψ::AbstractArray{T,N}, m::QG3Model{T}) where {T,N} = T(-1) .* SHtoGrid_dϕ(ψ, m)
 v(ψ, m) = m.acosϕi .* SHtoGrid_dλ(ψ, m)
