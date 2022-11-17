@@ -94,7 +94,7 @@ function QG3ModelParameters(L::Int, lats::AbstractArray{T,1}, lons::AbstractArra
     colats = lat_to_colat.(lats)
     μ = sin.(lats)
 
-    λmax = (length(lats)-1) * ((length(lats)-1) +1) # largest eigenvalue of the laplacian of the grid (in spherical harmonics)
+    λmax = (L-1) * (L) # largest eigenvalue of the laplacian of the grid (in spherical harmonics)
     cH = τHi * (λmax)^(-4) # * a^8, but a==1
 
     ψ_unit = (distance_unit*distance_unit)/(24*60*60*time_unit)
