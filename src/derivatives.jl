@@ -223,7 +223,7 @@ Apply the Laplacian. Also serves to convert regular vorticity (not the quasigeos
 Δ(ψ::AbstractArray{T,3}, L::Laplacian{T}) where T = L.Δ_3d .* ψ
 Δ(ψ::AbstractArray{T,2}, L::Laplacian{T}) where T = L.Δ .* ψ
 
-Δ(ψ::AbstractArray{T,2}, g::AbstractGridType{T}) where T = Δ(ψ, g.Δ)
+Δ(ψ::AbstractArray{T,N}, g::AbstractGridType{T}) where {T,N} = Δ(ψ, g.Δ)
 Δ(ψ::AbstractArray{T,N}, m::QG3Model{T}) where {T,N} = Δ(ψ, m.g)
 
 """
