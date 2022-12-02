@@ -230,7 +230,11 @@ function QG3Model(p::QG3ModelParameters; N_levels::Integer=3, kwargs...)
     cosϕ = togpu(compute_cosϕ(p))
     acosϕi = togpu(compute_acosϕi(p))
 
-    g = grid(p, p.gridtype, N_levels; kwargs...)
+    if hyperdiffusion_scale in kwargs 
+        g = grid(p, p.gridtype, N_levels; kwargs...)
+    else 
+        g = grid(p, p.gridtype, N_levels; hyperdiffusion_scale=p.cH, kwargs...)
+    end
 
     Tqψ, Tψq = compute_batched_ψq_transform_matrices(p, g.Δ)
     Tqψ, Tψq = togpu(Tqψ), togpu(Tψq)
