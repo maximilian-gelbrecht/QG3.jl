@@ -208,15 +208,17 @@ struct QG3Model{T} <: AbstractQG3Model{T}
 end
 
 """
-    QG3Model(p::QG3ModelParameters; N_level::Integer=3, SI::Bool=false)
+    QG3Model(p::QG3ModelParameters; N_level::Integer=3, kwargs...)
 
 Routine that pre computes the QG3 Model and returns a QG3Model struct with all precomputed fields except for the forcing.
 
 The pre-computation is always done on CPU due to scalar indexing being used, if a GPU is avaible the final result is then transferred to the GPU.
 
 If `N_level`` is set to values other than three, the pre-computations for the transforms and derivatives are computed with N_level levels, but the full model will not be working! This is just for accessing the transforms and derivatives
+
+All ``kwargs`` are forwarded to `grid`.
 """
-function QG3Model(p::QG3ModelParameters; N_levels::Integer=3, SI::Bool=false)
+function QG3Model(p::QG3ModelParameters; N_levels::Integer=3, kwargs...)
     
     if N_levels != 3
         @warn "N_level is not set to 3, the full model will not be functioning!" 
@@ -228,7 +230,7 @@ function QG3Model(p::QG3ModelParameters; N_levels::Integer=3, SI::Bool=false)
     cosϕ = togpu(compute_cosϕ(p))
     acosϕi = togpu(compute_acosϕi(p))
 
-    g = grid(p, p.gridtype, N_levels; hyperdiffusion_scale=p.cH)
+    g = grid(p, p.gridtype, N_levels; kwargs...)
 
     Tqψ, Tψq = compute_batched_ψq_transform_matrices(p, g.Δ)
     Tqψ, Tψq = togpu(Tqψ), togpu(Tψq)
