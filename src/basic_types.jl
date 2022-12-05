@@ -233,7 +233,7 @@ function QG3Model(p::QG3ModelParameters; N_levels::Integer=3, kwargs...)
     end
 
     if N_levels != 3
-        @warn "N_level is not set to 3, the full model will not be functioning!" 
+        @warn "QG3.jl: N_level is not set to 3, the full model will not be functioning!" 
 
         # we need a temporary grid during the initialization in that case currently
         if "hyperdiffusion_scale" in keys(kwargs)
