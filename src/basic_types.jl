@@ -220,10 +220,6 @@ All ``kwargs`` are forwarded to `grid`.
 """
 function QG3Model(p::QG3ModelParameters; N_levels::Integer=3, kwargs...)
     
-    if N_levels != 3
-        @warn "N_level is not set to 3, the full model will not be functioning!" 
-    end
-
     p = togpu(p)
 
     k = togpu(compute_k(p))
@@ -236,20 +232,37 @@ function QG3Model(p::QG3ModelParameters; N_levels::Integer=3, kwargs...)
         g = grid(p, p.gridtype, N_levels; hyperdiffusion_scale=p.cH, kwargs...)
     end
 
-    Tqψ, Tψq = compute_batched_ψq_transform_matrices(p, g.Δ)
+    if N_levels != 3
+        @warn "N_level is not set to 3, the full model will not be functioning!" 
+
+        # we need a temporary grid during the initialization in that case currently
+        if "hyperdiffusion_scale" in keys(kwargs)
+            grid_temp = grid(p, p.gridtype, 3; kwargs...)
+        else 
+            grid_temp = grid(p, p.gridtype, 3; hyperdiffusion_scale=p.cH, kwargs...)
+        end
+    
+        grid_temp = grid(p, p.gridtype, 3)
+    else 
+        grid_temp = g 
+    end
+
+    Tqψ, Tψq = compute_batched_ψq_transform_matrices(p, grid_temp.Δ)
     Tqψ, Tψq = togpu(Tqψ), togpu(Tψq)
 
     TRcoeffs = togpu(compute_TR(p))
-    f = transform_SH(togpu(compute_coriolis_vector_grid(p)), g)
+    f = transform_SH(togpu(compute_coriolis_vector_grid(p)), grid_temp)
 
     TR_matrix = togpu(compute_batched_TR_matrix(p))
     f_J3 = togpu(compute_f_J3(p, f))
     
-    k_SH = transform_SH(k, g)
+    k_SH = transform_SH(k, grid_temp)
 
-    ∂k∂μ = SHtoGrid_dμ(k_SH, g.dμ)
-    ∂k∂λ = transform_grid(SHtoSH_dφ(k_SH, g.dλ), g) ./ (cosϕ .^ 2)
-    ∂k∂ϕ = SHtoGrid_dϕ(k_SH, g.dμ)
+    ∂k∂μ = SHtoGrid_dμ(k_SH, grid_temp.dμ)
+    ∂k∂λ = transform_grid(SHtoSH_dφ(k_SH, g.dλ), grid_temp) ./ (cosϕ .^ 2)
+    ∂k∂ϕ = SHtoGrid_dϕ(k_SH, grid_temp.dμ)
+
+    grid_temp = nothing
 
     return QG3Model(p, g, k, TRcoeffs, TR_matrix, cosϕ, acosϕi, Tψq, Tqψ, f, f_J3, ∂k∂ϕ, ∂k∂μ, ∂k∂λ)
 end
