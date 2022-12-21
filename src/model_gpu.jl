@@ -46,3 +46,8 @@ function QG3MM_gpu(q, m, t)
     ψ = qprimetoψ(p, q)
     return - J(ψ, q, p) - D(ψ, q, p) + S
 end
+
+function QG3MM_adv_gpu(q, m, t)
+    ψ = qprimetoψ(m, q)
+    return - J(ψ, q, m)
+end
