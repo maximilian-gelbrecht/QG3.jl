@@ -93,7 +93,7 @@ summary(p::cur2rPlan) = string("R2R wrapper of ", summary(p.p))
 
 @eval LinearAlgebra.ldiv!(y::CuArray, p::cur2rPlan{U,T,S,$BACKWARD}, x::CuArray) where {U,T,S} = to_real(LinearAlgebra.ldiv!(y, p.plan, x), p.region)
 
-to_real(input_array::CuArray, region::Integer) where {T} = CUDA.cat(CUDA.real(input_array), CUDA.imag(input_array), dims=region)
+to_real(input_array::CuArray{T,N}, region::Integer) where {T,N} = CUDA.cat(CUDA.real(input_array), CUDA.imag(input_array), dims=region)
 
 function to_complex(input_array::AbstractArray{T,N}, region::Integer, cutoff_ind::Integer) where {T,N}
     Re = selectdim(input_array, region, 1:cutoff_ind)

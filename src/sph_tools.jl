@@ -106,7 +106,7 @@ Pre-compute a matrix with (m) values of the SH matrix format of FastTransforms.j
 
 Kwarg 'GPU', if given, overrides the automatic detection of wheather or not a GPU is avaible. 
 """
-function mMatrix(L::Integer, M::Integer) where T<:Number
+function mMatrix(L::T, M::T) where T<:Integer
     mmMat = zeros(L,M)
     for m ∈ -(L-1):(L-1)
         for il ∈ 1:(L - abs(m))

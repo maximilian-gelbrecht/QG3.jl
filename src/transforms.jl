@@ -148,19 +148,19 @@ function GaussianGridtoSHTransform(p::QG3ModelParameters{T}, N_level::Int=3) whe
 end
 
 # 2D CPU version
-function transform_SH(A::AbstractArray{P,2}, t::GaussianGridtoSHTransform{P,S,T,U,false}) where {P,R,S,T,U}
+function transform_SH(A::AbstractArray{P,2}, t::GaussianGridtoSHTransform{P,S,T,U,false}) where {P,S,T,U}
     FTA = (t.FT_2d * A)[:,t.truncate_array]
     @tullio out[il,im] := t.Pw[i,il,im] * FTA[i,im]
 end
 
 # 3D CPU version 
-function  transform_SH(A::AbstractArray{P,3}, t::GaussianGridtoSHTransform{P,S,T,U,false}) where {P,R,S,T,U}
+function  transform_SH(A::AbstractArray{P,3}, t::GaussianGridtoSHTransform{P,S,T,U,false}) where {P,S,T,U}
     FTA = (t.FT_3d * A)[:,:,t.truncate_array]
     @tullio out[ilvl,il,im] := t.Pw[ilat,il,im] * FTA[ilvl,ilat,im]
 end
 
 # 2D GPU version 
-function transform_SH(A::AbstractArray{P,2}, t::GaussianGridtoSHTransform{P,S,T,U,true}) where {P,R,S,T,U}
+function transform_SH(A::AbstractArray{P,2}, t::GaussianGridtoSHTransform{P,S,T,U,true}) where {P,S,T,U}
     FTA = t.FT_2d * A
 
     # truncation is performed in this step as Pw has 0s where the expansion is truncated
@@ -168,7 +168,7 @@ function transform_SH(A::AbstractArray{P,2}, t::GaussianGridtoSHTransform{P,S,T,
 end
 
 # 3D GPU version
-function transform_SH(A::AbstractArray{P,3}, t::GaussianGridtoSHTransform{P,S,T,U,true}) where {P,R,S,T,U}
+function transform_SH(A::AbstractArray{P,3}, t::GaussianGridtoSHTransform{P,S,T,U,true}) where {P,S,T,U}
     FTA = t.FT_3d * A
 
     # truncation is performed in this step as Pw has 0s where the expansion is truncated
