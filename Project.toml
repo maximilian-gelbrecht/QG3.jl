@@ -1,7 +1,7 @@
 name = "QG3"
 uuid = "d558103f-7907-4730-8f30-3d9252e5a318"
 authors = ["Maximilian Gelbrecht <maximilian.gelbrecht@posteo.de>"]
-version = "0.7.0"
+version = "0.8.0"
 
 [deps]
 AbstractFFTs = "621f4979-c628-5d54-868e-fcf4e3e8185c"
