@@ -13,7 +13,9 @@
 
 
 """
-Convert the streamfunction ψ to (anomlous) potential vorticity q' in spherical harmonics basis
+    ψtoqprime(p::QG3Model{T}, ψ::AbstractArray{T,3}) 
+
+Convert the streamfunction ψ to (anomlous) potential vorticity q' in spherical harmonics basis. See also [`ψtoq`](@ref).
 
 This version is slightly slower than the old one on CPU (as it not aware of the matrix being half full of zeroes), but it is non-mutating which makes it suitable for the automatic differentation.
 
@@ -23,17 +25,23 @@ It replaces the double loop over the coefficient matrix with a batched vector mu
 
 
 """
-Convert the streamfunction ψ to the potential vorticity
+    ψtoq(p::QG3Model{T}, ψ::AbstractArray{T,3}) 
+
+Convert the streamfunction ψ to the potential vorticity. See also [`ψtoqprime`](@ref).
 """
 ψtoq(p::QG3Model{T}, ψ::AbstractArray{T,3}) where T<:Number = ψtoqprime(p, ψ) + p.f
 
 """
-Convert the potential vorticity q to streamfunction ψ
+    qtoψ(p::QG3Model{T}, q::AbstractArray{T,3}) 
+
+Convert the potential vorticity q to streamfunction ψ. See also [`qprimetoψ`](@ref). 
 """
 qtoψ(p::QG3Model{T}, q::AbstractArray{T,3}) where T<:Number = qprimetoψ(p, q - p.f)
 
 """
-Convert the anomalous potential vorticity q' to streamfunction ψ
+    qprimetoψ(p::QG3Model{T}, q::AbstractArray{T,3})
+
+Convert the anomalous potential vorticity q' to streamfunction ψ. 
 
 This version is slightly slower than the old one (as it not aware of the matrix being half full of zeroes), but it is non-mutating which makes it suitable for the automatic differentation.
 
@@ -41,7 +49,22 @@ It replaces the double loop over the coefficient matrix with a batched vector mu
 """
 qprimetoψ(p::QG3Model{T}, q::AbstractArray{T,3}) where {T} = reshape(batched_vec(p.Tqψ, reshape(q,3,:)),3 , p.g.size_SH...)
 
+function qprimetoψ(p::QG3Model{T}, q::AbstractArray{T,4}) 
+
+    ψ = similar(q) 
+    for it ∈ size(ψ,4)
+        ψ[:,:,:,it] = qprimetoψ(p, q[:,:,:,it])
+    end 
+
+    ψ
+end 
+
+
+
+
 """
+    J(ψ::AbstractArray{T,2}, q::AbstractArray{T,2}, g::AbstractGridType{T})
+
 Compute the Jacobian determinant from ψ and q in μ,λ coordinates, J = ∂ψ/∂x ∂q/∂y - ∂ψ/∂y ∂q/∂x = 1/a^2cosϕ ( - ∂ψ/∂λ ∂q/∂ϕ + ∂ψ/∂ϕ ∂q/∂λ) =  1/a^2 (- ∂ψ/∂λ ∂q/∂μ + ∂ψ/∂μ ∂q/∂λ)
 
 The last term ∂ψ/∂λ accounts for the planetery vorticity, actually it is 2Ω ∂ψ/∂λ, but 2Ω == 1, (write q = q' + 2Ωμ to proof it)
@@ -51,6 +74,8 @@ J(ψ::AbstractArray{T,2}, q::AbstractArray{T,2}, g::AbstractGridType{T}) where T
 J(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, m::QG3Model{T}) where {T,N} = J(ψ, q, m.g)
 
 """
+    J_F(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T}) 
+
 Compute the Jacobian determinant from ψ and q in μ,λ coordinates without the planetary vorticity, as used in computing the eddy/transient forcing
 """
 J_F(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T}) where {T,N} = transform_SH(SHtoGrid_dμ(ψ, g).*SHtoGrid_dλ(q, g) - (SHtoGrid_dλ(ψ, g).*SHtoGrid_dμ(q, g)), g)
@@ -68,12 +93,16 @@ J_F_SI(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T}, R:
 J_SI(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T}, R::T, Ω::T) where {T,N} = J_F_SI(ψ, q, g, R) - T(2).*Ω.*SHtoSH_dλ(ψ, g) ./ (R^2)
 
 """
+    J3(ψ::AbstractArray{T,2}, q::AbstractArray{T,2}, m::QG3Model{T}) 
+
 For the Jacobian at 850hPa, q = q' + f(1+h/H_0) = q' + f + f*h/H_0, so that the thrid term has to be added.
 """
 J3(ψ::AbstractArray{T,2}, q::AbstractArray{T,2}, m::QG3Model{T}) where T<:Number = J(ψ, q + (m.f[3,:,:] - m.f[2,:,:]), m)
 
 """
-Ekman dissipation
+    EK(ψ::AbstractArray{T,2}, m::QG3Model{T}) 
+
+Computes the Ekman dissipation with: 
 
  EK = ∇(k∇ψ) = (∇k ∇ψ) + k Δψ
  EK = 1/a^2cos^2ϕ ∂k/∂λ ∂ψ/∂λ + 1/a^2 ∂k/∂ϕ ∂ψ/∂ϕ + k Δψ   (a==1)
@@ -87,14 +116,18 @@ D2(ψ::AbstractArray{T,3}, qprime::AbstractArray{T,3}, m::QG3Model{T}) where T<:
 D3(ψ::AbstractArray{T,3}, qprime::AbstractArray{T,3}, m::QG3Model{T}) where T<:Number = TR23(m, ψ) + EK(ψ[3,:,:], m) + H(qprime, 3, m)
 
 """
-Temperature relaxation
+    TR(m::QG3Model{T}, ψ1, ψ2, Ri::T) 
+
+Computes the Temperature relaxation between layers with streamfunction `ψ1` and `ψ2`.
 """
 TR(m::QG3Model{T}, ψ1, ψ2, Ri::T) where T<: Number = m.p.τRi .* Ri .* (ψ1 - ψ2)
 TR12(m::QG3Model{T}, ψ::AbstractArray{T,3}) where T<:Number = m.TRcoeffs[1,:,:] .* (ψ[1,:,:] - ψ[2,:,:])
 TR23(m::QG3Model{T}, ψ::AbstractArray{T,3}) where T<:Number = m.TRcoeffs[2,:,:] .* (ψ[2,:,:] - ψ[3,:,:])
 
 """
-Horizontal diffusion, q' is anomolous pv (without coriolis) 2D Fields m.cH∇8 = m.p.cH * m.∇8
+    H(qprime::AbstractArray{T,3}, i::Int, m::QG3Model{T}) 
+
+Computes the Horizontal diffusion at level `i`, q' is anomolous pv (without coriolis) 2D Fields m.cH∇8 = m.p.cH * m.∇8
 """
 H(qprime::AbstractArray{T,3}, i::Int, m::QG3Model{T}) where T<: Number = cH∇8(qprime[i,:,:], m)
 
