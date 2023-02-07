@@ -47,9 +47,9 @@ This version is slightly slower than the old one (as it not aware of the matrix 
 
 It replaces the double loop over the coefficient matrix with a batched vector multiply. The advantage of that is that it is optimised for GPU, so it might actually be faster on the GPU than doing a manual loop.
 """
-qprimetoψ(p::QG3Model{T}, q::AbstractArray{T,3}) where {T} = reshape(batched_vec(p.Tqψ, reshape(q,3,:)),3 , p.g.size_SH...)
+qprimetoψ(p::QG3Model{T}, q::AbstractArray{T,3}) where T = reshape(batched_vec(p.Tqψ, reshape(q,3,:)),3 , p.g.size_SH...)
 
-function qprimetoψ(p::QG3Model{T}, q::AbstractArray{T,4}) 
+function qprimetoψ(p::QG3Model{T}, q::AbstractArray{T,4}) where T
 
     ψ = similar(q) 
     for it ∈ size(ψ,4)

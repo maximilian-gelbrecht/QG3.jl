@@ -119,14 +119,14 @@ change_msign(A::AbstractArray{T,3}, i::Integer, swap_array::AbstractArray{Int,1}
 Pre-computes Pseudo-spectral approach to computing derivatives with repsect to μ = sin(lats). Derivatives are called with following the naming scheme: "Domain1Input"to"Domain2Output"_d"derivativeby"
 
 """
-struct GaussianGrid_dμ{onGPU} <: AbstractμDerivative{onGPU}
-    t::SHtoGaussianGridTransform
-    msinθ
-    msinθ_3d  
+struct GaussianGrid_dμ{onGPU, S<:SHtoGaussianGridTransform, M, A} <: AbstractμDerivative{onGPU}
+    t::S
+    msinθ::M
+    msinθ_3d::A
 end
 
-show(io::IO, t::GaussianGrid_dμ{true}) = print(io, "Pre-computed SH to Gaussian Grid Derivative{",P,"} on GPU")
-show(io::IO, t::GaussianGrid_dμ{false}) = print(io, "Pre-computed SH to Gaussian Grid Derivative{",P,"} on CPU")
+show(io::IO, t::GaussianGrid_dμ{true}) = print(io, "Pre-computed SH to Gaussian Grid Derivative on GPU")
+show(io::IO, t::GaussianGrid_dμ{false}) = print(io, "Pre-computed SH to Gaussian Grid Derivative on CPU")
 
 function GaussianGrid_dμ(p::QG3ModelParameters{T}, N_level::Int=3) where {T}
     dPμdμ, __ = compute_P(p)
@@ -151,7 +151,9 @@ function GaussianGrid_dμ(p::QG3ModelParameters{T}, N_level::Int=3) where {T}
     msinθ = togpu(T.(reshape(-sin.(p.θ),p.N_lats, 1)))
     msinθ_3d = togpu(make3d(msinθ))
 
-    GaussianGrid_dμ{cuda_used[]}(SHtoGaussianGridTransform{T,typeof(iFT_2d),typeof(iFT_3d),typeof(dPμdμ),cuda_used[]}(iFT_2d, iFT_3d, dPμdμ, outputsize, p.N_lats, p.N_lons, p.M), msinθ, msinθ_3d)
+    transform = SHtoGaussianGridTransform{T, typeof(iFT_2d), typeof(iFT_3d), typeof(dPμdμ), typeof(outputsize), typeof(p.N_lats), cuda_used[]}(iFT_2d, iFT_3d, dPμdμ, outputsize, p.N_lats, p.N_lons, p.M)
+    
+    GaussianGrid_dμ{cuda_used[], typeof(transform), typeof(msinθ), typeof(msinθ_3d)}(transform, msinθ, msinθ_3d)
 end
 
 """
@@ -191,11 +193,11 @@ Initializes the `Laplacian` in spherical harmonics and if `init_inverse==true` a
 
 Apply the Laplacian with the functions (@ref)[`Δ`] and (@ref)[`Δ⁻¹`]
 """
-struct Laplacian{T,onGPU} <: AbstractDerivative{onGPU}
-    Δ::AbstractArray{T,2}
-    Δ_3d::AbstractArray{T,3}
-    Δ⁻¹::AbstractArray{T,2}
-    Δ⁻¹_3d::AbstractArray{T,3}
+struct Laplacian{T,M<:AbstractArray{T,2},A<:AbstractArray{T,3},onGPU} <: AbstractDerivative{onGPU}
+    Δ::M
+    Δ_3d::A
+    Δ⁻¹::M
+    Δ⁻¹_3d::A
 end 
 
 function Laplacian(p::QG3ModelParameters{T}; init_inverse=false, R::T=T(1), kwargs...) where T
@@ -211,7 +213,7 @@ function Laplacian(p::QG3ModelParameters{T}; init_inverse=false, R::T=T(1), kwar
         Δ⁻¹_3d = Array{T,3}(undef,0,0,0)
     end 
         
-    Laplacian{T, cuda_used[]}(Δ, make3d(Δ), Δ⁻¹, Δ⁻¹_3d)
+    Laplacian{T, typeof(Δ), typeof(Δ⁻¹_3d), cuda_used[]}(Δ, make3d(Δ), Δ⁻¹, Δ⁻¹_3d)
 end 
 
 """
@@ -244,9 +246,9 @@ Initializes the Hyperdiffusion / horizonatal diffusion operator.
 
 Apply it via the (@ref)[`∇8`] functions.
 """
-struct Hyperdiffusion{T,onGPU} <: AbstractDerivative{onGPU}
-    ∇8::AbstractArray{T,2} 
-    ∇8_3d::AbstractArray{T,3}
+struct Hyperdiffusion{T, M<:AbstractArray{T,2}, A<:AbstractArray{T,3}, onGPU} <: AbstractDerivative{onGPU}
+    ∇8::M
+    ∇8_3d::A
 end 
 
 function Hyperdiffusion(p::QG3ModelParameters{T}; hyperdiffusion_scale::T=T(1), kwargs...) where T
@@ -254,7 +256,7 @@ function Hyperdiffusion(p::QG3ModelParameters{T}; hyperdiffusion_scale::T=T(1), 
     ∇8 = cuda_used[] ? reorder_SH_gpu(compute_∇8(p), p) : compute_∇8(p)
     ∇8 .*= hyperdiffusion_scale 
 
-    Hyperdiffusion{T, cuda_used[]}(∇8, make3d(∇8))
+    Hyperdiffusion{T, typeof(∇8), typeof(make3d(∇8)), cuda_used[]}(∇8, make3d(∇8))
 end 
 
 """

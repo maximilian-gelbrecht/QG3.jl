@@ -78,7 +78,7 @@ sol = @time solve(prob, Tsit5(), dt=DT)
 # PLOT OPtiON
 using Plots
 
-PLOT = true
+PLOT = false
 
 
 if PLOT
@@ -94,8 +94,8 @@ if PLOT
     gif(anim, "data_fps20_ψ.gif", fps = 20)
 end
 
-"""
 
+PLOT = true 
 if PLOT
     ilvl = 1  # choose lvl to plot here
 
@@ -109,6 +109,8 @@ if PLOT
     end
     gif(anim, "anim_fps20_ψ.gif", fps = 20)
 end
+
+"""
 
  if PLOT
         ilvl = 1  # choose lvl to plot here

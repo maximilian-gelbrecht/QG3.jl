@@ -104,18 +104,16 @@ GaussianGridtoSHTransform(p::QG3ModelParameters{T}, N_level::Int=3)
 
 Returns transform struct, that can be used with `transform_SH`. This is one is for a Gaussian Grid.
 """
-struct GaussianGridtoSHTransform{P,S,T,U,onGPU} <: AbstractGridtoSHTransform{onGPU}
+struct GaussianGridtoSHTransform{P,S,T,U,V<:AbstractVector,TU,onGPU} <: AbstractGridtoSHTransform{onGPU}
     FT_2d::S
     FT_3d::T
     Pw::U
-    truncate_array
-    output_size
+    truncate_array::V
+    output_size::TU
 end
 
-show(io::IO, t::GaussianGridtoSHTransform{P,S,T,U,true}) where {P,S,T,U} = print(io, "Pre-computed Gaussian Grid to SH Transform{",P,"} on GPU")
-
-show(io::IO, t::GaussianGridtoSHTransform{P,S,T,U,false}) where {P,S,T,U} = print(io, "Pre-computed Gaussian Grid to SH Transform{",P,"} on CPU")
-
+show(io::IO, t::GaussianGridtoSHTransform{P,S,T,U,V,TU,true}) where {P,S,T,U,V,TU} = print(io, "Pre-computed Gaussian Grid to SH Transform{",P,"} on GPU")
+show(io::IO, t::GaussianGridtoSHTransform{P,S,T,U,V,TU,false}) where {P,S,T,U,V,TU} = print(io, "Pre-computed Gaussian Grid to SH Transform{",P,"} on CPU")
 
 function GaussianGridtoSHTransform(p::QG3ModelParameters{T}, N_level::Int=3) where {T}
     __, P = compute_P(p)
@@ -144,23 +142,23 @@ function GaussianGridtoSHTransform(p::QG3ModelParameters{T}, N_level::Int=3) whe
         end
         outputsize = (p.L, p.M)
     end
-    GaussianGridtoSHTransform{T,typeof(FT_2d),typeof(FT_3d),typeof(Pw),cuda_used[]}(FT_2d, FT_3d, Pw, truncate_array, outputsize)
+    GaussianGridtoSHTransform{T,typeof(FT_2d),typeof(FT_3d),typeof(Pw), typeof(truncate_array), typeof(outputsize), cuda_used[]}(FT_2d, FT_3d, Pw, truncate_array, outputsize)
 end
 
 # 2D CPU version
-function transform_SH(A::AbstractArray{P,2}, t::GaussianGridtoSHTransform{P,S,T,U,false}) where {P,S,T,U}
+function transform_SH(A::AbstractArray{P,2}, t::GaussianGridtoSHTransform{P,S,T,U,V,TU,false}) where {P,S,T,U,V,TU}
     FTA = (t.FT_2d * A)[:,t.truncate_array]
     @tullio out[il,im] := t.Pw[i,il,im] * FTA[i,im]
 end
 
 # 3D CPU version 
-function  transform_SH(A::AbstractArray{P,3}, t::GaussianGridtoSHTransform{P,S,T,U,false}) where {P,S,T,U}
+function  transform_SH(A::AbstractArray{P,3}, t::GaussianGridtoSHTransform{P,S,T,U,V,TU,false}) where {P,S,T,U,V,TU}
     FTA = (t.FT_3d * A)[:,:,t.truncate_array]
     @tullio out[ilvl,il,im] := t.Pw[ilat,il,im] * FTA[ilvl,ilat,im]
 end
 
 # 2D GPU version 
-function transform_SH(A::AbstractArray{P,2}, t::GaussianGridtoSHTransform{P,S,T,U,true}) where {P,S,T,U}
+function transform_SH(A::AbstractArray{P,2}, t::GaussianGridtoSHTransform{P,S,T,U,V,TU,true}) where {P,S,T,U,V,TU}
     FTA = t.FT_2d * A
 
     # truncation is performed in this step as Pw has 0s where the expansion is truncated
@@ -168,26 +166,25 @@ function transform_SH(A::AbstractArray{P,2}, t::GaussianGridtoSHTransform{P,S,T,
 end
 
 # 3D GPU version
-function transform_SH(A::AbstractArray{P,3}, t::GaussianGridtoSHTransform{P,S,T,U,true}) where {P,S,T,U}
+function transform_SH(A::AbstractArray{P,3}, t::GaussianGridtoSHTransform{P,S,T,U,V,TU,true}) where {P,S,T,U,V,TU}
     FTA = t.FT_3d * A
 
     # truncation is performed in this step as Pw has 0s where the expansion is truncated
     @tullio out[ilvl,il,im] := t.Pw[ilat,il,im] * FTA[ilvl,ilat,im]
 end
 
-struct SHtoGaussianGridTransform{R,S,T,U,onGPU} <: AbstractSHtoGridTransform{onGPU}
+struct SHtoGaussianGridTransform{R,S,T,U,TU,I<:Integer,onGPU} <: AbstractSHtoGridTransform{onGPU}
     iFT_2d::S
     iFT_3d::T
     P::U
-    output_size
-    N_lats::Integer
-    N_lons::Integer
-    M::Integer
+    output_size::TU
+    N_lats::I
+    N_lons::I
+    M::I
 end
 
-show(io::IO, t::SHtoGaussianGridTransform{P,S,T,U,true}) where {P,S,T,U} = print(io, "Pre-computed SH to Gaussian Grid Transform{",P,"} on GPU")
-
-show(io::IO, t::SHtoGaussianGridTransform{P,S,T,U,false}) where {P,S,T,U} = print(io, "Pre-computed SH to Gaussian Grid Transform{",P,"} on CPU")
+show(io::IO, t::SHtoGaussianGridTransform{P,S,T,U,TU,I,true}) where {P,S,T,U,TU,I} = print(io, "Pre-computed SH to Gaussian Grid Transform{",P,"} on GPU")
+show(io::IO, t::SHtoGaussianGridTransform{P,S,T,U,TU,I,false}) where {P,S,T,U,TU,I} = print(io, "Pre-computed SH to Gaussian Grid Transform{",P,"} on CPU")
 
 function SHtoGaussianGridTransform(p::QG3ModelParameters{T}, N_level::Int=3) where {T}
     __, P = compute_P(p)
@@ -209,11 +206,11 @@ function SHtoGaussianGridTransform(p::QG3ModelParameters{T}, N_level::Int=3) whe
     end
     outputsize = (p.N_lats, p.N_lons)
 
-    SHtoGaussianGridTransform{T,typeof(iFT_2d),typeof(iFT_3d),typeof(P),cuda_used[]}(iFT_2d, iFT_3d, P, outputsize, p.N_lats, p.N_lons, p.M)
+    SHtoGaussianGridTransform{T,typeof(iFT_2d),typeof(iFT_3d),typeof(P), typeof(outputsize), typeof(p.N_lats),cuda_used[]}(iFT_2d, iFT_3d, P, outputsize, p.N_lats, p.N_lons, p.M)
 end
 
 # 2D CPU Version 
-function transform_grid(A::AbstractArray{P,2}, t::SHtoGaussianGridTransform{P,S,T,U,false}) where {P,S,T,U}
+function transform_grid(A::AbstractArray{P,2}, t::SHtoGaussianGridTransform{P,S,T,U,TU,I,false}) where {P,S,T,U,TU,I}
 
     out = batched_vec(t.P, A)
 
@@ -222,7 +219,7 @@ function transform_grid(A::AbstractArray{P,2}, t::SHtoGaussianGridTransform{P,S,
 end
 
 # 3D CPU Version
-function transform_grid(A::AbstractArray{P,3}, t::SHtoGaussianGridTransform{P,S,T,U,false}) where {P,S,T,U}
+function transform_grid(A::AbstractArray{P,3}, t::SHtoGaussianGridTransform{P,S,T,U,TU,I,false}) where {P,S,T,U,TU,I}
 
     @tullio out[lvl, ilat, im] := t.P[ilat, il, im] * A[lvl, il, im]
 
@@ -232,7 +229,7 @@ function transform_grid(A::AbstractArray{P,3}, t::SHtoGaussianGridTransform{P,S,
 end
 
 # 2D GPU Version
-function transform_grid(A::AbstractArray{P,2}, t::SHtoGaussianGridTransform{P,S,T,U,true}) where {P,S,T,U}
+function transform_grid(A::AbstractArray{P,2}, t::SHtoGaussianGridTransform{P,S,T,U,TU,I,true}) where {P,S,T,U,TU,I}
 
     out = batched_vec(t.P,A)
     
@@ -240,7 +237,7 @@ function transform_grid(A::AbstractArray{P,2}, t::SHtoGaussianGridTransform{P,S,
 end
 
 # 3D GPU Version
-function transform_grid(A::AbstractArray{P,3}, t::SHtoGaussianGridTransform{P,S,T,U,true}) where {P,S,T,U}
+function transform_grid(A::AbstractArray{P,3}, t::SHtoGaussianGridTransform{P,S,T,U,TU,I,true}) where {P,S,T,U,TU,I}
     @tullio out[lvl, ilat, im] := t.P[ilat, il, im] * A[lvl, il, im]
 
     t.iFT_3d * out

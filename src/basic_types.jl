@@ -51,20 +51,20 @@ Default arguments for most parameters, so that
 
 works as well.
 """
-struct QG3ModelParameters{T}
-    L::Int
-    M::Int
-    N_lats::Int
-    N_lons::Int
+struct QG3ModelParameters{T,I<:Int,A<:AbstractArray{T,1},M<:AbstractArray{T,2}}
+    L::I
+    M::I
+    N_lats::I
+    N_lons::I
 
-    lats::AbstractArray{T,1}
-    θ::AbstractArray{T,1}
-    μ::AbstractArray{T,1}
+    lats::A
+    θ::A
+    μ::A
 
-    lons::AbstractArray{T,1}
+    lons::A
 
-    LS::AbstractArray{T,2}
-    h::AbstractArray{T,2}
+    LS::M
+    h::M
 
     R1i::T
     R2i::T
@@ -123,19 +123,19 @@ Struct for the transforms and derivates of a Gaussian Grid
 * `Δ::Laplacian`
 * `∇8::Hyperdiffusion`
 """
-struct GaussianGrid{T, onGPU} <: AbstractGridType{T, onGPU}
-    GtoSH
-    SHtoG
-    dμ
-    dλ
-    Δ
-    ∇8
-    size_SH
-    size_grid
+struct GaussianGrid{T, G, S, M, L, LA, H, TU, onGPU} <: AbstractGridType{T, onGPU}
+    GtoSH::G
+    SHtoG::S
+    dμ::M
+    dλ::L
+    Δ::LA
+    ∇8::H
+    size_SH::TU
+    size_grid::TU
 end
 
-show(io::IO, g::GaussianGrid{T, true}) where {T} = print(io," Gaussian Grid on GPU")
-show(io::IO, g::GaussianGrid{T, false}) where {T} = print(io," Gaussian Grid on CPU")
+show(io::IO, g::GaussianGrid{T, G, S, M, L, LA, H, TU, true}) where {T, G, S, M, L, LA, H, TU} = print(io," Gaussian Grid on GPU")
+show(io::IO, g::GaussianGrid{T, G, S, M, L, LA, H, TU, false}) where {T, G, S, M, L, LA, H, TU} = print(io," Gaussian Grid on CPU")
 
 """
     grid(p::QG3ModelParameters{T})
@@ -160,7 +160,7 @@ function grid(p::QG3ModelParameters{T}, gridtype::String, N_level::Int=3; kwargs
         size_grid = (p.N_lats, p.N_lons)
         size_SH = cuda_used[] ? (p.N_lats, p.N_lons+2) : (p.L, p.M)
 
-        return GaussianGrid{T, cuda_used[]}(GtoSH, SHtoG, dμ, dλ,  Δ, ∇8, size_SH, size_grid)
+        return GaussianGrid{T, typeof(GtoSH), typeof(SHtoG), typeof(dμ), typeof(dλ), typeof(Δ), typeof(∇8), typeof(size_grid), cuda_used[]}(GtoSH, SHtoG, dμ, dλ,  Δ, ∇8, size_SH, size_grid)
     else
         error("Unknown gridtype.")
     end
@@ -190,21 +190,21 @@ Holds all parameter and grid information, plus additional pre-computed fields th
 * `∂k∂λ` includes 1/cos^2ϕ (for Ekman dissipiation computation)
 
 """
-struct QG3Model{T} <: AbstractQG3Model{T}
-    p::QG3ModelParameters{T}
-    g::AbstractGridType{T}
-    k::AbstractArray{T,2}
-    TRcoeffs::AbstractArray{T,3}
-    TR_matrix
-    cosϕ::AbstractArray{T,2}
-    acosϕi::AbstractArray{T,2}
-    Tψq
-    Tqψ
-    f
-    f_J3
-    ∂k∂ϕ
-    ∂k∂μ
-    ∂k∂λ
+struct QG3Model{T, P<:QG3ModelParameters, G<:AbstractGridType, M<:AbstractArray{T,2}, A<:AbstractArray{T,3}} <: AbstractQG3Model{T}
+    p::P
+    g::G
+    k::M
+    TRcoeffs::A
+    TR_matrix::A
+    cosϕ::M
+    acosϕi::M
+    Tψq::A
+    Tqψ::A
+    f::A
+    f_J3::A
+    ∂k∂ϕ::M
+    ∂k∂μ::M
+    ∂k∂λ::M
 end
 
 """
