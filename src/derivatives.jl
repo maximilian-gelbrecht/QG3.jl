@@ -193,11 +193,11 @@ Initializes the `Laplacian` in spherical harmonics and if `init_inverse==true` a
 
 Apply the Laplacian with the functions (@ref)[`Δ`] and (@ref)[`Δ⁻¹`]
 """
-struct Laplacian{T,M<:AbstractArray{T,2},A<:AbstractArray{T,3},onGPU} <: AbstractDerivative{onGPU}
+struct Laplacian{T,M<:AbstractArray{T,2},A1<:AbstractArray{T,3},A2<:AbstractArray{T,3},onGPU} <: AbstractDerivative{onGPU}
     Δ::M
-    Δ_3d::A
+    Δ_3d::A1
     Δ⁻¹::M
-    Δ⁻¹_3d::A
+    Δ⁻¹_3d::A2
 end 
 
 function Laplacian(p::QG3ModelParameters{T}; init_inverse=false, R::T=T(1), kwargs...) where T
