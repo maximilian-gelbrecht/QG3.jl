@@ -104,7 +104,7 @@ GaussianGridtoSHTransform(p::QG3ModelParameters{T}, N_level::Int=3)
 
 Returns transform struct, that can be used with `transform_SH`. This is one is for a Gaussian Grid.
 """
-struct GaussianGridtoSHTransform{P,S,T,U,V<:AbstractVector,TU,onGPU} <: AbstractGridtoSHTransform{onGPU}
+struct GaussianGridtoSHTransform{P,S,T,U,V<:Union{AbstractVector,Nothing},TU,onGPU} <: AbstractGridtoSHTransform{onGPU}
     FT_2d::S
     FT_3d::T
     Pw::U
