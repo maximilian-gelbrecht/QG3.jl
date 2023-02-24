@@ -204,6 +204,8 @@ function Laplacian(p::QG3ModelParameters{T}; init_inverse=false, R::T=T(1), kwar
     
     Δ = cuda_used[] ? reorder_SH_gpu(compute_Δ(p), p) : compute_Δ(p)
     Δ ./= (R*R)
+    Δ_3d = make3d(Δ)
+
     if init_inverse
         Δ⁻¹ = cuda_used[] ? reorder_SH_gpu(compute_Δ⁻¹(p), p) : compute_Δ⁻¹(p)
         Δ⁻¹ .*= (R*R)
@@ -213,7 +215,7 @@ function Laplacian(p::QG3ModelParameters{T}; init_inverse=false, R::T=T(1), kwar
         Δ⁻¹_3d = Array{T,3}(undef,0,0,0)
     end 
         
-    Laplacian{T, typeof(Δ), typeof(Δ⁻¹_3d), cuda_used[]}(Δ, make3d(Δ), Δ⁻¹, Δ⁻¹_3d)
+    Laplacian{T, typeof(Δ), typeof(Δ_3d), typeof(Δ⁻¹_3d), cuda_used[]}(Δ, Δ_3d, Δ⁻¹, Δ⁻¹_3d)
 end 
 
 """
