@@ -58,7 +58,7 @@ This version for 4d (spatiotemporal) arrays is only meant for post- and preproce
 """
 function qprimetoψ(p::QG3Model{T}, q::AbstractArray{T,4}) where T
     ψ = similar(q) 
-    for it ∈ size(ψ,4)
+    for it ∈ axes(ψ,4)
         ψ[:,:,:,it] = qprimetoψ(p, q[:,:,:,it])
     end 
     ψ
@@ -73,7 +73,7 @@ This version for 4d (spatiotemporal) arrays is only meant for post- and preproce
 """
 function ψtoqprime(p::QG3Model{T}, ψ::AbstractArray{T,4}) where T
     q = similar(ψ) 
-    for it ∈ size(ψ,4)
+    for it ∈ axes(ψ,4)
         q[:,:,:,it] = ψtoqprime(p, ψ[:,:,:,it])
     end 
     q
