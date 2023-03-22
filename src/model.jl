@@ -49,18 +49,35 @@ It replaces the double loop over the coefficient matrix with a batched vector mu
 """
 qprimetoψ(p::QG3Model{T}, q::AbstractArray{T,3}) where T = reshape(batched_vec(p.Tqψ, reshape(q,3,:)),3 , p.g.size_SH...)
 
-function qprimetoψ(p::QG3Model{T}, q::AbstractArray{T,4}) where T
+"""
+    qprimetoψ(p::QG3Model{T}, q::AbstractArray{T,4})
 
+Convert the anomalous potential vorticity q' to streamfunction ψ. 
+
+This version for 4d (spatiotemporal) arrays is only meant for post- and preprocessing. 
+"""
+function qprimetoψ(p::QG3Model{T}, q::AbstractArray{T,4}) where T
     ψ = similar(q) 
     for it ∈ size(ψ,4)
         ψ[:,:,:,it] = qprimetoψ(p, q[:,:,:,it])
     end 
-
     ψ
 end 
 
+"""
+    ψtoqprime(p::QG3Model{T}, ψ::AbstractArray{T,4})
 
+Convert the anomalous potential vorticity q' to streamfunction ψ. 
 
+This version for 4d (spatiotemporal) arrays is only meant for post- and preprocessing. 
+"""
+function ψtoqprime(p::QG3Model{T}, ψ::AbstractArray{T,4}) where T
+    q = similar(ψ) 
+    for it ∈ size(ψ,4)
+        q[:,:,:,it] = ψtoqprime(p, ψ[:,:,:,it])
+    end 
+    q
+end 
 
 """
     J(ψ::AbstractArray{T,2}, q::AbstractArray{T,2}, g::AbstractGridType{T})
