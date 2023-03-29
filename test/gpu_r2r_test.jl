@@ -4,12 +4,16 @@
 if CUDA.functional()
 
     using CUDA.CUFFT
+    import FFTW
     using Flux
     using QG3
 
     A = CUDA.rand(100);
     W = CUDA.rand(100);
     V = CUDA.rand(102);
+
+    Ac = Array(A);
+
 
     A2 = CUDA.rand(10,100);
     W2 = CUDA.rand(10,100);
@@ -19,6 +23,15 @@ if CUDA.functional()
 
     fft_plan = plan_cur2r(A, 1)
     ifft_plan = plan_cuir2r(fft_plan * A, 100, 1)
+
+    # compare to FFTW 
+    cpu_fft_plan = FFTW.plan_r2r(Ac, FFTW.R2HC)
+
+    @test Array((fft_plan * A)[1:50]) ≈ (cpu_fft_plan * Ac)[1:50] 
+    @test Array((fft_plan * A)[53:end-1]) ≈ (cpu_fft_plan * Ac)[end:-1:52] # reverse order in FFTW HC Format
+    @test (fft_plan \ (fft_plan * A)) ≈ A
+    @test ifft_plan * (fft_plan * A) ≈ A
+    @test ifft_plan \ (ifft_plan * (fft_plan * A)) ≈ (fft_plan * A)
 
     func(x) = ifft_plan*(fft_plan*(W .* x))
     loss(x,y) = sum(abs2,func(x)-y)
