@@ -12,7 +12,7 @@ import ChainRulesCore.rrule
 const FORWARD = -1
 const BACKWARD = 1
 
-mutable struct cur2rPlan{F,U,T,R,S,V,W} <: AbstractFFTs.Plan{U}
+ struct cur2rPlan{F,U,T,R,S,V,W} <: AbstractFFTs.Plan{U}
     plan::T
     region::R
     d::S # size in real domain
@@ -57,7 +57,7 @@ function plan_cuir2r(arr::AbstractArray{T,S}, d::Int, dims=1) where {T,S}
     end
 
     plan = CUDA.CUFFT.plan_irfft(arr_complex, d, dims)
-    plan.pinv = CUDA.CUFFT.plan_inv(plan)
+    plan.p.pinv = CUDA.CUFFT.plan_inv(plan.p)
 
     invN = AbstractFFTs.normalization(real(eltype(arr)), plan.p.osz, plan.p.region) # its a scaled plan
 
@@ -72,8 +72,6 @@ function plan_cuir2r(arr::AbstractArray{T,S}, d::Int, dims=1) where {T,S}
 end
 
 @eval plan_cuir2r(plan::AbstractFFTs.Plan{T}, region, d::Integer, n::Integer, scale) where {T} = cur2rPlan{$BACKWARD,T,typeof(plan),typeof(region),typeof(d),typeof(n),typeof(scale)}(plan, region, d, n, scale)
-
-
 
 size(p::cur2rPlan, d) = size(p.plan, d)
 ndims(p::cur2rPlan) = ndims(p.plan)
