@@ -1,4 +1,5 @@
 import Base.show
+using CUDA, CUDAKernels, KernelAbstractions
 
 """
     abstract type AbstractSHTransform{onGPU} 
