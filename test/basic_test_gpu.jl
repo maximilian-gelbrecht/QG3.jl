@@ -42,8 +42,7 @@ if CUDA.functional()
 
     sol = @time solve(prob, AB5(), dt=DT)
 
-    @test sol.retcode==:Success
-
+    @test SciMLBase.successful_retcode(sol)
 else
     println("No CUDA available, test skipped")
 end
