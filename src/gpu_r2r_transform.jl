@@ -12,7 +12,7 @@ import ChainRulesCore.rrule
 const FORWARD = -1
 const BACKWARD = 1
 
- struct cur2rPlan{F,U,T,R,S,V,W} <: AbstractFFTs.Plan{U}
+struct cur2rPlan{F,U,T,R,S,V,W} <: AbstractFFTs.Plan{U}
     plan::T
     region::R
     d::S # size in real domain
