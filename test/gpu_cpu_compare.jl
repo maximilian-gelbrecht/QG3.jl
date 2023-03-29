@@ -48,7 +48,7 @@ if CUDA.functional()
 
     B_gpu = QG3.reorder_SH_gpu(B, qg3ppars);
 
-    @test sum(abs.(A - B_gpu)) < 1e-10
+    @test A ≈ B 
 
     RELTOL = 1e-5
     RELTOL_PREDICT = 1e-3
