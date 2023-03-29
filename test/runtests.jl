@@ -1,4 +1,4 @@
-using QG3
+using QG3, SciMLBase
 using Test
 
 println("testing basic functionality")

@@ -18,5 +18,5 @@ t_end = T(500.)
 prob = ODEProblem(QG3.QG3MM_gpu, q_0, (T(0.),t_end), (qg3p, S))
 sol = @time solve(prob, AB5(), dt=DT)
 
-@test sol.retcode==:Success
+@test SciMLBase.successful_retcode(sol)
 end
