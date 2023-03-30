@@ -33,7 +33,7 @@ function gpuoff()
 end
 
 
-using KernelAbstractions
+using KernelAbstractions, CUDAKernels
 
 togpu(x::AbstractArray) = cuda_used[] ? CuArray(x) : x
 tocpu(x) = cuda_used[] ? Array(x) : x
