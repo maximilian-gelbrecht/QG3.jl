@@ -48,9 +48,9 @@ function reorder_SH_gpu(A::AbstractArray{S,4}, p::QG3ModelParameters{T}) where {
 
     reindex = [1:2:(p.N_lons+2);[(p.N_lons+2)]; 2:2:(p.N_lons+1)]
 
-    out = zeros(S, size(A, 1), size(A,2), p.N_lats, p.N_lons+2)
-    out[:, :, 1:p.L, 1:p.M] = A
-    return togpu(out[:,:,reindex])
+    out = zeros(S, size(A, 1), p.N_lats, p.N_lons+2, size(A,4))
+    out[:, 1:p.L, 1:p.M, :] = A
+    return togpu(out[:,reindex,:])
 end
 
 function get_uppertriangle_sum(A)
