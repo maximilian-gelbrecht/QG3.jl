@@ -87,7 +87,7 @@ Compute the Jacobian determinant from ψ and q in μ,λ coordinates, J = ∂ψ/�
 The last term ∂ψ/∂λ accounts for the planetery vorticity, actually it is 2Ω ∂ψ/∂λ, but 2Ω == 1, (write q = q' + 2Ωμ to proof it)
 
 """
-J(ψ::AbstractArray{T,2}, q::AbstractArray{T,2}, g::AbstractGridType{T}) where T<:Number = transform_SH(SHtoGrid_dμ(ψ, g).*SHtoGrid_dλ(q, g) - (SHtoGrid_dλ(ψ, g).*SHtoGrid_dμ(q, g)), g) - SHtoSH_dλ(ψ, g)
+J(ψ::AbstractArray{T,2}, q::AbstractArray{T,2}, g::AbstractGridType{T}) where T<:Number = transform_SH(SHtoGrid_dμ(q, g).*SHtoGrid_dλ(ψ, g) - (SHtoGrid_dλ(q, g).*SHtoGrid_dμ(ψ, g)), g) - SHtoSH_dλ(ψ, g)
 J(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, m::QG3Model{T}) where {T,N} = J(ψ, q, m.g)
 
 """
@@ -95,7 +95,7 @@ J(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, m::QG3Model{T}) where {T,N} = J
 
 Compute the Jacobian determinant from ψ and q in μ,λ coordinates without the planetary vorticity, as used in computing the eddy/transient forcing
 """
-J_F(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T}) where {T,N} = transform_SH(SHtoGrid_dμ(ψ, g).*SHtoGrid_dλ(q, g) - (SHtoGrid_dλ(ψ, g).*SHtoGrid_dμ(q, g)), g)
+J_F(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T}) where {T,N} = transform_SH(SHtoGrid_dμ(q, g).*SHtoGrid_dλ(ψ, g) - (SHtoGrid_dλ(q, g).*SHtoGrid_dμ(ψ, g)), g)
 J_F(ψ, q, m::QG3Model{T}) where T = J_F(ψ, q, m.g)
 
 """
@@ -103,10 +103,10 @@ J_F(ψ, q, m::QG3Model{T}) where T = J_F(ψ, q, m.g)
 
 Computes the Jacobian (without the planetary voriticity), input SPH, output Grid space 
 """
-J_F_Grid(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T}) where {T,N} = SHtoGrid_dμ(ψ, g).*SHtoGrid_dλ(q, g) - SHtoGrid_dλ(ψ, g).*SHtoGrid_dμ(q, g)
+J_F_Grid(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T}) where {T,N} = SHtoGrid_dμ(q, g).*SHtoGrid_dλ(ψ, g) - SHtoGrid_dλ(q, g).*SHtoGrid_dμ(ψ, g)
 
-J_F_Grid_SI(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T}, R::T) where {T,N} = SHtoGrid_dμ(ψ, g).*SHtoGrid_dλ(q, g) - SHtoGrid_dλ(ψ, g).*SHtoGrid_dμ(q, g) ./ (R^2)
-J_F_SI(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T}, R::T) where {T,N} = transform_SH(SHtoGrid_dμ(ψ, g).*SHtoGrid_dλ(q, g) - (SHtoGrid_dλ(ψ, g).*SHtoGrid_dμ(q, g)), g) ./ (R^2)
+J_F_Grid_SI(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T}, R::T) where {T,N} = SHtoGrid_dμ(q, g).*SHtoGrid_dλ(ψ, g) - SHtoGrid_dλ(q, g).*SHtoGrid_dμ(ψ, g) ./ (R^2)
+J_F_SI(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T}, R::T) where {T,N} = transform_SH(SHtoGrid_dμ(q, g).*SHtoGrid_dλ(ψ, g) - (SHtoGrid_dλ(q, g).*SHtoGrid_dμ(ψ, g)), g) ./ (R^2)
 J_SI(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T}, R::T, Ω::T) where {T,N} = J_F_SI(ψ, q, g, R) - T(2).*Ω.*SHtoSH_dλ(ψ, g) ./ (R^2)
 
 """
@@ -114,7 +114,7 @@ J_SI(ψ::AbstractArray{T,N}, q::AbstractArray{T,N}, g::AbstractGridType{T}, R::T
 
 For the Jacobian at 850hPa, q = q' + f(1+h/H_0) = q' + f + f*h/H_0, so that the thrid term has to be added.
 """
-J3(ψ::AbstractArray{T,2}, q::AbstractArray{T,2}, m::QG3Model{T}) where T<:Number = J(ψ, q + (m.f[3,:,:] - m.f[2,:,:]), m)
+J3(ψ::AbstractArray{T,2}, q::AbstractArray{T,2}, m::QG3Model{T}) where T<:Number = J(q + (m.f[3,:,:] - m.f[2,:,:]), ψ, m)
 
 """
     EK(ψ::AbstractArray{T,2}, m::QG3Model{T}) 

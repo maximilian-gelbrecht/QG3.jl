@@ -5,14 +5,14 @@
 
 Computes the Jacobian for the QG3 model in 3D Field formulation (e.g. for GPU). Takes as an imput the streamfunction ψ and the potential vorticity q' without the coriolis contribution. Adds the contribution of the Coriolis force and orography at the 850hPa level that is prescribed in the MM QG3 Model. 
 """
-J(ψ::AbstractArray{T,3}, q::AbstractArray{T,3}, m::QG3Model{T}) where T =  transform_SH(SHtoGrid_dμ(ψ, m).*SHtoGrid_dλ(q + m.f_J3, m) - (SHtoGrid_dλ(ψ, m).*SHtoGrid_dμ(q + m.f_J3, m)), m) - SHtoSH_dλ(ψ, m)
+J(ψ::AbstractArray{T,3}, q::AbstractArray{T,3}, m::QG3Model{T}) where T =  transform_SH(SHtoGrid_dμ(q + m.f_J3, m).*SHtoGrid_dλ(ψ, m) - (SHtoGrid_dλ(q + m.f_J3, m).*SHtoGrid_dμ(ψ, m)), m) - SHtoSH_dλ(ψ, m)
 
 """
     Jprime(ψ::AbstractArray{T,3}, q::AbstractArray{T,3}, g::AbstractGridType{T})
 
 Computes the Jacobian (∂ψ/∂μ ∂q/∂λ - ∂ψ/∂λ ∂q/∂μ). Directly computes the derivatives of the two inputs ψ and q and doesn't account for any additional contribution (e.g. from the Coriolis force).
 """
-Jprime(ψ::AbstractArray{T,3}, q::AbstractArray{T,3}, g::AbstractGridType{T}) where T =  transform_SH(SHtoGrid_dμ(ψ, g).*SHtoGrid_dλ(q, g) - (SHtoGrid_dλ(ψ, g).*SHtoGrid_dμ(q, g)), g) 
+Jprime(ψ::AbstractArray{T,3}, q::AbstractArray{T,3}, g::AbstractGridType{T}) where T =  transform_SH(SHtoGrid_dμ(q, g).*SHtoGrid_dλ(ψ, g) - (SHtoGrid_dλ(q, g).*SHtoGrid_dμ(ψ, g)), g) 
 Jprime(ψ::AbstractArray{T,3}, q::AbstractArray{T,3}, m::QG3Model{T}) where T = Jprime(ψ,q,m.g)
 
 """
