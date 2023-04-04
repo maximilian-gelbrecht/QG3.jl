@@ -66,6 +66,8 @@ q_0 = QG3.ψtoqprime(qg3p, ψ_0)
 # compute the forcing from winter data
 S = @time QG3.compute_S_Roads(ψ_SH[:,:,:,winter_ind], qg3p)
 
+S2 = @time QG3.compute_S_Roads2(ψ_SH[:,:,:,winter_ind], qg3p)
+
 @save "data/t21-precomputed-S.jld2" S
 @save "data/t21-precomputed-p.jld2" qg3ppars
 @save "data/t21-precomputed-sf.jld2" ψ_0

@@ -16,10 +16,8 @@ function compute_S_Roads(data::AbstractArray{T,4}, m::QG3Model{T}; datasource="�
     if datasource ∈ ["sf","ψ"]
         # get avg climatalogy
         ψc = dropdims(mean(data, dims=4),dims=4)
-        Δq = similar(data)
-        for it=1:Nt
-            Δq[:,:,:,it] = ψtoqprime(m, data[:,:,:,it])
-        end
+        Δq = ψtoqprime(m, data)  
+       
         qc = dropdims(mean(Δq, dims=4),dims=4)
         Δψ = similar(data)
         #get deviation from average
@@ -31,11 +29,8 @@ function compute_S_Roads(data::AbstractArray{T,4}, m::QG3Model{T}; datasource="�
     elseif datasource=="qprime"
 
         qc = dropdims(mean(data, dims=4),dims=4)
-        Δψ = similar(data)
+        Δψ =  qprimetoψ(m, data)
 
-        for it=1:Nt
-            Δψ[:,:,:,it] = qprimetoψ(m, data[:,:,:,it])
-        end
         ψc = dropdims(mean(Δψ, dims=4),dims=4)
         Δq = similar(data)
         #get deviation from average
@@ -50,17 +45,11 @@ function compute_S_Roads(data::AbstractArray{T,4}, m::QG3Model{T}; datasource="�
     Jv = similar(data[:,:,:,1])  # doing it like this is agnostic to whether or not it is on GPU or CPU
     Jv .= 0 # avg Jacobian variability
     for it=1:Nt
-        Jv[1,:,:] += J_F(Δψ[1,:,:,it], Δq[1,:,:,it], m)
-        Jv[2,:,:] += J_F(Δψ[2,:,:,it], Δq[2,:,:,it], m)
-        Jv[3,:,:] += J_F(Δψ[3,:,:,it], Δq[3,:,:,it], m)
+        Jv += J_F(Δψ[:,:,:,it], Δq[:,:,:,it], m) # J_F without plantery vorticity term here, because Δq has no coriolis term 
     end
     Jv ./= Nt
 
-    return permutedims(cat(
-    J(ψc[1,:,:], qc[1,:,:], m) + Jv[1,:,:] + D1(ψc, qc, m),
-    J(ψc[2,:,:], qc[2,:,:], m) + Jv[2,:,:] + D2(ψc, qc, m),
-    J3(ψc[3,:,:], qc[3,:,:], m) + Jv[3,:,:] + D3(ψc, qc, m),
-    dims=3),[3,1,2])
+    return J(ψc, qc, m) + Jv + D(ψc, qc, m)
 end
 
 """
