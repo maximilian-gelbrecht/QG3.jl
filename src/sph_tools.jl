@@ -255,3 +255,28 @@ function revert_truncate(A::AbstractArray{T,2}, p::QG3ModelParameters{T}) where 
         return A
     end
 end
+
+"""
+    SH_zero_mask(p::QG3.QG3ModelParameters, size_tup=nothing)
+
+Returns a mask that zeroes out all spurious elements of the SH coefficients + the (0,0) element which is also set zero
+"""
+function SH_zero_mask(p::QG3.QG3ModelParameters, size_tup=nothing)
+    mask = QG3.lMatrix(p) .!= 0
+    mask[1,1] = 1
+
+    if isnothing(size_tup)
+        return mask 
+    end 
+    
+    if length(size_tup)==2
+        return mask 
+    elseif length(size_tup)==3
+        return cat([reshape(mask, 1, size(mask)...) for i=1:size_tup[1]]..., dims=1)
+    elseif length(size_tup)==4
+        mask = cat([reshape(mask, 1, size(mask)...) for i=1:size_tup[2]]..., dims=1)
+        return mask = cat([reshape(mask, 1, size(mask)...) for i=1:size_tup[1]]..., dims=1)
+    else
+        error("Wrong dimension of size should be 2,3 or 4")
+    end
+end
