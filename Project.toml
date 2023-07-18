@@ -1,7 +1,7 @@
 name = "QG3"
 uuid = "d558103f-7907-4730-8f30-3d9252e5a318"
 authors = ["Maximilian Gelbrecht <maximilian.gelbrecht@posteo.de>"]
-version = "0.9.2"
+version = "0.9.3"
 
 [deps]
 AbstractFFTs = "621f4979-c628-5d54-868e-fcf4e3e8185c"
@@ -26,7 +26,6 @@ Tullio = "bc48ee85-29a4-5162-ae0b-a64e1601d4bc"
 Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
 [compat]
-CUDA = "~3.13.1"
 julia = "1.8"
 
 [extras]
