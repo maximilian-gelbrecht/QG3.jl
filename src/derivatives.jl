@@ -29,13 +29,14 @@ abstract type AbstractμDerivative{onGPU} <: AbstractDerivative{onGPU} end
 
 Pre-computes Derivatives by longitude. Uses the SH relation, is therefore independ from the grid.
 """
-struct Derivative_dλ{R,S,T,onGPU} <: AbstractλDerivative{onGPU}
+struct Derivative_dλ{R,S,A4,T,onGPU} <: AbstractλDerivative{onGPU}
     mm::R
     mm_3d::S
+    mm_4d::A4
     swap_m_sign_array::T
 end
 
-function Derivative_dλ(p::QG3ModelParameters{T}) where {T}
+function Derivative_dλ(p::QG3ModelParameters{T}; N_batch::Int=0) where {T}
 
     mm = -(mMatrix(p))
     mm_3d = make3d(mm)
@@ -48,7 +49,13 @@ function Derivative_dλ(p::QG3ModelParameters{T}) where {T}
         swap_m_sign_array = [1;vcat([[2*i+1,2*i] for i=1:p.L-1]...)]
     end
 
-    Derivative_dλ{typeof(mm), typeof(mm_3d), typeof(swap_m_sign_array), cuda_used[]}(mm, mm_3d, swap_m_sign_array)
+    if N_batch > 0 
+        mm_4d = repeat(mm_3d, 1,1,1,1)
+    else 
+        mm_4d = nothing
+    end
+
+    Derivative_dλ{typeof(mm), typeof(mm_3d), typeof(mm_4d), typeof(swap_m_sign_array), cuda_used[]}(mm, mm_3d, mm_4d, swap_m_sign_array)
 end
 
 """
@@ -92,6 +99,10 @@ SHtoSH_dφ(ψ::AbstractArray{T,2}, g::Derivative_dλ) where {T} = _SHtoSH_dφ(ψ
 # 3d field variant
 SHtoSH_dφ(ψ::AbstractArray{T,3}, g::Derivative_dλ) where {T} = _SHtoSH_dφ(ψ, g.mm_3d, g.swap_m_sign_array)
 
+# 4d field variant 
+SHtoSH_dφ(ψ::AbstractArray{T,4}, g::Derivative_dλ) where {T} = _SHtoSH_dφ(ψ, g.mm_4d, g.swap_m_sign_array)
+
+
 _SHtoSH_dφ(ψ::AbstractArray{T,N}, mm::AbstractArray{T,N}, swap_arr) where {T,N} = mm .* change_msign(ψ, swap_arr)
 
 
@@ -107,6 +118,10 @@ change_msign(A::AbstractArray{T,2}, swap_array::AbstractArray{Int,1}) where {T} 
 # 3d field version
 change_msign(A::AbstractArray{T,3}, swap_array::AbstractArray{Int,1}) where {T} = @inbounds view(A,:,:,swap_array)
 
+# 4d field version 
+change_msign(A::AbstractArray{T,4}, swap_array::AbstractArray{Int,1}) where {T} = @inbounds view(A,:,:,swap_array,:)
+
+
 Zygote.@adjoint function change_msign(A::AbstractArray{T,N}, swap_array::AbstractArray{Int,1}) where {T,N}
     return (change_msign(A,swap_array), Δ->(change_msign(Δ,swap_array),nothing))
 end
@@ -119,18 +134,25 @@ change_msign(A::AbstractArray{T,3}, i::Integer, swap_array::AbstractArray{Int,1}
 Pre-computes Pseudo-spectral approach to computing derivatives with repsect to μ = sin(lats). Derivatives are called with following the naming scheme: "Domain1Input"to"Domain2Output"_d"derivativeby"
 
 """
-struct GaussianGrid_dμ{onGPU, S<:SHtoGaussianGridTransform, M, A} <: AbstractμDerivative{onGPU}
+struct GaussianGrid_dμ{onGPU, S<:SHtoGaussianGridTransform, M, A, A4} <: AbstractμDerivative{onGPU}
     t::S
     msinθ::M
     msinθ_3d::A
+    msinθ_4d::A4
 end
 
 show(io::IO, t::GaussianGrid_dμ{true}) = print(io, "Pre-computed SH to Gaussian Grid Derivative on GPU")
 show(io::IO, t::GaussianGrid_dμ{false}) = print(io, "Pre-computed SH to Gaussian Grid Derivative on CPU")
 
-function GaussianGrid_dμ(p::QG3ModelParameters{T}, N_level::Int=3) where {T}
+function GaussianGrid_dμ(p::QG3ModelParameters{T}, N_level::Int=3; N_batch::Int=0) where {T}
     dPμdμ, __ = compute_P(p)
     A_real = togpu(rand(T, N_level, p.N_lats, p.N_lons))
+
+    if N_batch > 0 
+        A_real4d = togpu(rand(T, N_level, p.N_lats, p.N_lons, N_batch))
+    else 
+        iFT_4d = nothing 
+    end  
 
     if cuda_used[]
         dPμdμ = reorder_SH_gpu(dPμdμ, p)
@@ -141,19 +163,32 @@ function GaussianGrid_dμ(p::QG3ModelParameters{T}, N_level::Int=3) where {T}
         FT_3d = plan_cur2r(A_real, 3)
         iFT_3d = plan_cuir2r(FT_3d*A_real, p.N_lons, 3)
 
+        if N_batch > 0 
+            FT_4d = plan_cur2r(A_real4d, 3)
+            iFT_4d = plan_cuir2r(FT_4d*A_real, p.N_lons, 3)
+        end 
     else 
         iFT_2d = FFTW.plan_r2r(A_real[1,:,:], FFTW.HC2R, 2)
         iFT_3d = FFTW.plan_r2r(A_real, FFTW.HC2R, 3)
 
+        if N_batch > 0 
+            iFT_4d = FFTW.plan_r2r(A_real4d, FFTW.HC2R, 3)
+        end 
     end
     outputsize = (p.N_lats, p.N_lons)
 
     msinθ = togpu(T.(reshape(-sin.(p.θ),p.N_lats, 1)))
     msinθ_3d = togpu(make3d(msinθ))
-
-    transform = SHtoGaussianGridTransform{T, typeof(iFT_2d), typeof(iFT_3d), typeof(dPμdμ), typeof(outputsize), typeof(p.N_lats), cuda_used[]}(iFT_2d, iFT_3d, dPμdμ, outputsize, p.N_lats, p.N_lons, p.M)
     
-    GaussianGrid_dμ{cuda_used[], typeof(transform), typeof(msinθ), typeof(msinθ_3d)}(transform, msinθ, msinθ_3d)
+    if N_batch > 0 
+        msinθ_4d = repeat(msinθ_3d, 1,1,1,1)
+    else 
+        msinθ_4d = nothing 
+    end
+
+    transform = SHtoGaussianGridTransform{T, typeof(iFT_2d), typeof(iFT_3d), typeof(iFT_4d), typeof(dPμdμ), typeof(outputsize), typeof(p.N_lats), cuda_used[]}(iFT_2d, iFT_3d, iFT_4d, dPμdμ, outputsize, p.N_lats, p.N_lons, p.M)
+    
+    GaussianGrid_dμ{cuda_used[], typeof(transform), typeof(msinθ), typeof(msinθ_3d), typeof(msinθ_4d)}(transform, msinθ, msinθ_3d, msinθ_4d)
 end
 
 """
@@ -185,6 +220,7 @@ SHtoGrid_dθ(ψ, m::QG3Model{T}) where {T} = SHtoGrid_dθ(ψ, m.g.dμ)
 SHtoGrid_dθ(ψ, g::GaussianGrid{T}) where {T} = SHtoGrid_dθ(ψ, g.dμ)
 SHtoGrid_dθ(ψ::AbstractArray{T,2}, d::AbstractμDerivative) where {T} = d.msinθ .* SHtoGrid_dμ(ψ, d)
 SHtoGrid_dθ(ψ::AbstractArray{T,3}, d::AbstractμDerivative) where {T} = d.msinθ_3d .* SHtoGrid_dμ(ψ, d)
+SHtoGrid_dθ(ψ::AbstractArray{T,4}, d::AbstractμDerivative) where {T} = d.msinθ_4d .* SHtoGrid_dμ(ψ, d)
 
 """
     Laplacian(p::QG3ModelParameters{T}; init_inverse=false, R::T=T(1)) where T
@@ -193,14 +229,16 @@ Initializes the `Laplacian` in spherical harmonics and if `init_inverse==true` a
 
 Apply the Laplacian with the functions (@ref)[`Δ`] and (@ref)[`Δ⁻¹`]
 """
-struct Laplacian{T,M<:AbstractArray{T,2},A1<:AbstractArray{T,3},A2<:AbstractArray{T,3},onGPU} <: AbstractDerivative{onGPU}
+struct Laplacian{T,M<:AbstractArray{T,2},A1<:AbstractArray{T,3},A2<:AbstractArray{T,3},A4,A5,onGPU} <: AbstractDerivative{onGPU}
     Δ::M
     Δ_3d::A1
+    Δ_4d::A4
     Δ⁻¹::M
     Δ⁻¹_3d::A2
+    Δ⁻¹_4d::A5
 end 
 
-function Laplacian(p::QG3ModelParameters{T}; init_inverse=false, R::T=T(1), kwargs...) where T
+function Laplacian(p::QG3ModelParameters{T}; init_inverse=false, R::T=T(1), N_batch::Int=0, kwargs...) where T
     
     Δ = cuda_used[] ? reorder_SH_gpu(compute_Δ(p), p) : compute_Δ(p)
     Δ ./= (R*R)
@@ -215,7 +253,15 @@ function Laplacian(p::QG3ModelParameters{T}; init_inverse=false, R::T=T(1), kwar
         Δ⁻¹_3d = Array{T,3}(undef,0,0,0)
     end 
         
-    Laplacian{T, typeof(Δ), typeof(Δ_3d), typeof(Δ⁻¹_3d), cuda_used[]}(Δ, Δ_3d, Δ⁻¹, Δ⁻¹_3d)
+    if N_batch > 0 
+        Δ_4d = repeat(Δ_3d, 1,1,1,1)
+        Δ⁻¹_4d = repeat(Δ⁻¹_3d, 1,1,1,1)  
+    else 
+        Δ_4d = nothing
+        Δ⁻¹_4d = nothing  
+    end
+
+    Laplacian{T, typeof(Δ), typeof(Δ_3d), typeof(Δ⁻¹_3d), typeof(Δ_4d), typeof(Δ⁻¹_4d), cuda_used[]}(Δ, Δ_3d, Δ_4d, Δ⁻¹, Δ⁻¹_3d, Δ⁻¹_4d)
 end 
 
 """
@@ -224,6 +270,7 @@ end
 
 Apply the Laplacian. Also serves to convert regular vorticity (not the quasigeostrophic one) to streamfunction) 
 """
+Δ(ψ::AbstractArray{T,4}, L::Laplacian{T}) where T = L.Δ_4d .* ψ
 Δ(ψ::AbstractArray{T,3}, L::Laplacian{T}) where T = L.Δ_3d .* ψ
 Δ(ψ::AbstractArray{T,2}, L::Laplacian{T}) where T = L.Δ .* ψ
 
@@ -235,6 +282,7 @@ Apply the Laplacian. Also serves to convert regular vorticity (not the quasigeos
 
 Apply the inverse Laplacian. Also serves to convert the streamfunction to regular vorticity 
 """
+Δ⁻¹(ψ::AbstractArray{T,4}, L::Laplacian{T}) where T = L.Δ⁻¹_4d .* ψ
 Δ⁻¹(ψ::AbstractArray{T,3}, L::Laplacian{T}) where T = L.Δ⁻¹_3d .* ψ
 Δ⁻¹(ψ::AbstractArray{T,2}, L::Laplacian{T}) where T = L.Δ⁻¹ .* ψ 
 
@@ -248,17 +296,25 @@ Initializes the Hyperdiffusion / horizonatal diffusion operator.
 
 Apply it via the (@ref)[`∇8`] functions.
 """
-struct Hyperdiffusion{T, M<:AbstractArray{T,2}, A<:AbstractArray{T,3}, onGPU} <: AbstractDerivative{onGPU}
+struct Hyperdiffusion{T, M<:AbstractArray{T,2}, A<:AbstractArray{T,3}, A4, onGPU} <: AbstractDerivative{onGPU}
     ∇8::M
     ∇8_3d::A
+    ∇8_4d::A4
 end 
 
-function Hyperdiffusion(p::QG3ModelParameters{T}; hyperdiffusion_scale::T=T(1), kwargs...) where T
+function Hyperdiffusion(p::QG3ModelParameters{T}; hyperdiffusion_scale::T=T(1), N_batch::Int=0, kwargs...) where T
 
     ∇8 = cuda_used[] ? reorder_SH_gpu(compute_∇8(p), p) : compute_∇8(p)
     ∇8 .*= hyperdiffusion_scale 
 
-    Hyperdiffusion{T, typeof(∇8), typeof(make3d(∇8)), cuda_used[]}(∇8, make3d(∇8))
+    ∇8_3d = make3d(∇8) 
+    if N_batch > 0 
+        ∇8_4d = repeat(∇8_3d, 1,1,1,1)
+    else 
+        ∇8_4d = nothing 
+    end 
+
+    Hyperdiffusion{T, typeof(∇8), typeof(∇8_3d), typeof(∇8_4d), cuda_used[]}(∇8, ∇8_3d, ∇8_4d)
 end 
 
 """
