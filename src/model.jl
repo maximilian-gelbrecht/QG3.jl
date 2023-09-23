@@ -21,8 +21,7 @@ This version is slightly slower than the old one on CPU (as it not aware of the 
 
 It replaces the double loop over the coefficient matrix with a batched vector multiply. The advantage other besides it being non-mutating is that it is optimised for GPU, so it might actually be faster on the GPU than doing a manual loop.
 """
-ψtoqprime(p::QG3Model{T}, ψ::AbstractArray{T,3}) where {T} = reshape(batched_vec(p.Tψq, reshape(ψ,3,:)),3 , p.g.size_SH...) 
-
+ψtoqprime(p::QG3Model{T}, ψ::AbstractArray{T,3}) where T = reshape(batched_vec(p.Tψq, reshape(ψ,3,:)),3 , p.g.size_SH...) 
 
 """
     ψtoq(p::QG3Model{T}, ψ::AbstractArray{T,3}) 
@@ -53,31 +52,15 @@ qprimetoψ(p::QG3Model{T}, q::AbstractArray{T,3}) where T = reshape(batched_vec(
     qprimetoψ(p::QG3Model{T}, q::AbstractArray{T,4})
 
 Convert the anomalous potential vorticity q' to streamfunction ψ. 
-
-This version for 4d (spatiotemporal) arrays is only meant for post- and preprocessing. 
 """
-function qprimetoψ(p::QG3Model{T}, q::AbstractArray{T,4}) where T
-    ψ = similar(q) 
-    for it ∈ axes(ψ,4)
-        ψ[:,:,:,it] = qprimetoψ(p, q[:,:,:,it])
-    end 
-    ψ
-end 
+qprimetoψ(p::QG3Model{T}, ψ::AbstractArray{T,4}) where T = reshape(batched_mul(repeat(p.Tqψ,1,1,1,size(ψ,4)), reshape(ψ,3,1,:,size(ψ,4))),3 , p.g.size_SH..., size(ψ,4)) 
 
 """
     ψtoqprime(p::QG3Model{T}, ψ::AbstractArray{T,4})
 
 Convert the anomalous potential vorticity q' to streamfunction ψ. 
-
-This version for 4d (spatiotemporal) arrays is only meant for post- and preprocessing. 
 """
-function ψtoqprime(p::QG3Model{T}, ψ::AbstractArray{T,4}) where T
-    q = similar(ψ) 
-    for it ∈ axes(ψ,4)
-        q[:,:,:,it] = ψtoqprime(p, ψ[:,:,:,it])
-    end 
-    q
-end 
+ψtoqprime(p::QG3Model{T}, ψ::AbstractArray{T,4}) where T = reshape(batched_mul(repeat(p.Tψq,1,1,1,size(ψ,4)), reshape(ψ,3,1,:,size(ψ,4))),3 , p.g.size_SH..., size(ψ,4)) 
 
 """
     J(ψ::AbstractArray{T,2}, q::AbstractArray{T,2}, g::AbstractGridType{T})

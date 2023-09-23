@@ -6,7 +6,8 @@ using QG3, BenchmarkTools, DifferentialEquations, JLD2
 # load forcing and model parameters
 S, qg3ppars, ψ_0, q_0 = QG3.load_precomputed_data()
 
-g = QG3.grid(qg3ppars)
+qg3p = QG3Model(qg3ppars)
+g = qg3p.g
 
 cosθ = zeros(eltype(qg3ppars), qg3ppars.N_lats, qg3ppars.N_lons)
 msinθ = zeros(eltype(qg3ppars), qg3ppars.N_lats, qg3ppars.N_lons)
@@ -23,7 +24,7 @@ cg = transform_grid(cSH_2d, g)
 @test mean(abs.(cg - cosθ) ./ abs.(cg)) < 1e-3
 
 # back and forward transform
-@test isapprox(transform_SH(transform_grid(ψ_0, qg3p),qg3p),ψ_0,rtol=1e-3)
+@test isapprox(transform_SH(transform_grid(ψ_0, g),g),ψ_0,rtol=1e-3)
 
 # 2D deriv
 
@@ -69,7 +70,8 @@ cosθ = repeat(cosθ, 1,1,1,2)
 msinθ = repeat(msinθ, 1,1,1,2)
 A = rand(eltype(qg3ppars), size(cosθ)...)
 
-g4d = QG3.grid(qg3ppars; N_batch=2)
+qg3p_4d = QG3Model(qg3ppars; N_batch=2)
+g4d = qg3p_4d.g
 
 cSH = transform_SH(cosθ, g4d)
 
@@ -91,8 +93,40 @@ ASH = transform_SH(A, g4d)
 @test QG3.SHtoGrid_dθ(ASH[:,:,:,2],g) ≈ QG3.SHtoGrid_dθ(ASH,g4d)[:,:,:,2]
 
 # test Laplacian (there's a bias close to the poles)
-L1 = QG3.SHtoGrid_dθ(transform_SH((-msinθ).*QG3.SHtoGrid_dθ(A, g4d),g4d),g4d) ./ (-msinθ) + QG3.SHtoGrid_dφ(QG3.SHtoSH_dφ(A, g4d), g4d) ./ (msinθ .* msinθ)
-L2 = transform_grid(QG3.Δ(A, g4d), g4d)
-@test mean(abs.(L1-L2)) < 0.05
+msinθ = msinθ[:,:,:,1]
+L1 = QG3.SHtoGrid_dθ(transform_SH((-msinθ).*QG3.SHtoGrid_dθ(ψ_0, g4d),g4d),g4d) ./ (-msinθ) + QG3.SHtoGrid_dφ(QG3.SHtoSH_dφ(ψ_0, g4d), g4d) ./ (msinθ .* msinθ)
+L2 = transform_grid(QG3.Δ(ψ_0, g4d), g4d)
+@test mean(abs.(L1-L2)[:,4:end-4,:]) < 0.05
+
+# batched J test 
+
+ψ_0_4d = repeat(ψ_0,1,1,1,2)
+q_0_4d = repeat(q_0,1,1,1,2)
+@test QG3.J(ψ_0_4d, q_0_4d, qg3p_4d)[:,:,:,2] ≈ QG3.J(ψ_0, q_0, qg3p)
+
+#  psitoq test 
+@test QG3.qprimetoψ(qg3p,QG3.ψtoqprime(qg3p, ψ_0)) ≈ ψ_0
+
+A = QG3.ψtoqprime(qg3p, ψ_0)
+A[:,1,1] .= 0
+
+B = (QG3.Δ(ψ_0, qg3p)[1,:,:] - (qg3p.p.R1i) * (ψ_0[1,:,:] - ψ_0[2,:,:]))
+B[1,1] = 0 
+@test A[1,:,:] ≈ B 
+
+B = (QG3.Δ(ψ_0, qg3p)[2,:,:] + (qg3p.p.R1i) * (ψ_0[1,:,:] - ψ_0[2,:,:])) - (qg3p.p.R2i) * (ψ_0[2,:,:] - ψ_0[3,:,:])
+B[1,1] = 0
+@test A[2,:,:] ≈ B 
+
+B = (QG3.Δ(ψ_0, qg3p)[3,:,:] + (qg3p.p.R2i) * (ψ_0[2,:,:] - ψ_0[3,:,:]))
+B[1,1] = 0
+@test A[3,:,:] ≈ B 
+
+# psitoq batched test
+@test ψtoqprime(qg3p, ψ_0_4d)[:,:,:,1] ≈ ψtoqprime(qg3p, ψ_0)
+@test ψtoqprime(qg3p, ψ_0_4d)[:,:,:,2] ≈ ψtoqprime(qg3p, ψ_0)
+
+@test qprimetoψ(qg3p, q_0_4d)[:,:,:,1] ≈ qprimetoψ(qg3p, q_0)
+@test qprimetoψ(qg3p, q_0_4d)[:,:,:,2] ≈ qprimetoψ(qg3p, q_0)
 
 end
