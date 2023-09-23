@@ -107,6 +107,8 @@ togpu(p::QG3ModelParameters) = QG3ModelParameters(p.L, p.M, p.N_lats, p.N_lons, 
 
 tocpu(p::QG3ModelParameters) = QG3ModelParameters(p.L, p.M, p.N_lats, p.N_lons, tocpu(p.lats), tocpu(p.θ), tocpu(p.μ), tocpu(p.lons), tocpu(p.LS), tocpu(p.h), p.R1i, p.R2i, p.H0, p.τRi, p.τEi, p.cH, p.α1, p.α2, p.gridtype, p.time_unit, p.distance_unit, p.ψ_unit, p.q_unit)
 
+eltype(p::QG3ModelParameters{T}) where T = T
+
 show(io::IO, p::QG3ModelParameters{T}) where {T} = print(io," QG3ModelParameters{",T,"} with N_lats=",p.N_lats," N_lons=",p.N_lons," L_max=",p.L-1)
 
 """
@@ -142,7 +144,7 @@ show(io::IO, g::GaussianGrid{T, G, S, M, L, LA, H, TU, false}) where {T, G, S, M
 
 Convience constructor for the [`AbstractGridType`](@ref) based on the parameters set in `p`.
 """
-function grid(p::QG3ModelParameters{T}, gridtype::String, N_level::Int=3; kwargs...) where T<:Number
+function grid(p::QG3ModelParameters{T}, gridtype::String, N_level::Int=3; N_batch::Int=0, kwargs...) where T<:Number
 
     if gridtype=="regular"
         
@@ -150,12 +152,12 @@ function grid(p::QG3ModelParameters{T}, gridtype::String, N_level::Int=3; kwargs
 
     elseif gridtype=="gaussian"
 
-        GtoSH = GaussianGridtoSHTransform(p, N_level)
-        SHtoG = SHtoGaussianGridTransform(p, N_level)
-        dμ = GaussianGrid_dμ(p, N_level)
-        dλ = Derivative_dλ(p)
-        Δ = Laplacian(p; kwargs...)
-        ∇8 = Hyperdiffusion(p; kwargs...)
+        GtoSH = GaussianGridtoSHTransform(p, N_level; N_batch=N_batch)
+        SHtoG = SHtoGaussianGridTransform(p, N_level; N_batch=N_batch)
+        dμ = GaussianGrid_dμ(p, N_level; N_batch=N_batch)
+        dλ = Derivative_dλ(p; N_batch=N_batch)
+        Δ = Laplacian(p; N_batch=N_batch, kwargs...)
+        ∇8 = Hyperdiffusion(p; N_batch=N_batch, kwargs...)
 
         size_grid = (p.N_lats, p.N_lons)
         size_SH = cuda_used[] ? (p.N_lats, p.N_lons+2) : (p.L, p.M)
@@ -165,7 +167,7 @@ function grid(p::QG3ModelParameters{T}, gridtype::String, N_level::Int=3; kwargs
         error("Unknown gridtype.")
     end
 end
-grid(p::QG3ModelParameters) = grid(p, p.gridtype)
+grid(p::QG3ModelParameters; kwargs...) = grid(p, p.gridtype; kwargs...)
 
 """
     QG3Model{T}
@@ -279,3 +281,4 @@ isongpu(m::QG3Model{T}) where {T} = typeof(m.g) <: AbstractGridType{T, true}
 isongpu_string(m::QG3Model{T}) where {T} = isongpu(m::QG3Model{T}) ? "GPU" : "CPU"
 
 eltype(m::QG3Model{T}) where {T} = T
+
