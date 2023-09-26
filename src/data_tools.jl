@@ -111,7 +111,14 @@ function zeros_SH(p::QG3Model{T}; kwargs...) where T
         return zeros_SH(p.p; kwargs...)
     end 
 end
-zeros_SH(p::QG3ModelParameters{T}; N_levels::Int=3) where T = zeros(T, N_levels, p.L, p.M)
+
+function zeros_SH(p::QG3ModelParameters{T}; N_levels::Int=3, N_batch::Int=0) where T   
+    if N_batch > 0 
+        return zeros(T, N_levels, p.L, p.M)
+    else 
+        return zeros(T, N_levels, p.L, p.M, N_batch)
+    end 
+end 
 
 """
     zeros_Grid(p::QG3Model{T})
@@ -125,7 +132,13 @@ function zeros_Grid(p::QG3Model{T}; kwargs...) where T
         return zeros_Grid(p.p; kwargs...)
     end 
 end
-zeros_Grid(p::QG3ModelParameters{T}; N_levels::Int=3) where T = zeros(T, N_levels, p.N_lats, p.N_lons)
+function zeros_Grid(p::QG3ModelParameters{T}; N_levels::Int=3, N_batch::Int=0) where T
+    if N_batch > 0 
+        return zeros(T, N_levels, p.N_lats, p.N_lons, N_batch)
+    else 
+        return zeros(T, N_levels, p.N_lats, p.N_lons)
+    end 
+end 
 
 
 
