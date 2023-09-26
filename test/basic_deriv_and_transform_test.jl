@@ -55,7 +55,6 @@ cg = transform_grid(cSH, g)
 @test mean(abs.(cg - cosθ) ./ abs.(cg)) < 1e-3
 
 # 3D deriv
-
 # very close to zero
 @test abs.(mean(QG3.SHtoGrid_dλ(cSH, g))) < 1e-5
 
@@ -99,7 +98,6 @@ L2 = transform_grid(QG3.Δ(ψ_0, g4d), g4d)
 @test mean(abs.(L1-L2)[:,4:end-4,:]) < 0.05
 
 # batched J test 
-
 ψ_0_4d = repeat(ψ_0,1,1,1,2)
 q_0_4d = repeat(q_0,1,1,1,2)
 @test QG3.J(ψ_0_4d, q_0_4d, qg3p_4d)[:,:,:,2] ≈ QG3.J(ψ_0, q_0, qg3p)
