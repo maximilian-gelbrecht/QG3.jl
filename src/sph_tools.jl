@@ -261,19 +261,33 @@ end
 
 Returns a mask that zeroes out all spurious elements of the SH coefficients + the (0,0) element which is also set zero
 """
-function SH_zero_mask(p::QG3.QG3ModelParameters, size_tup=nothing)
+function SH_zero_mask(p::QG3.QG3ModelParameters, size_tup=nothing; N_batch::Int=0)
     mask = QG3.lMatrix(p) .!= 0
     mask[1,1] = 1
 
     if isnothing(size_tup)
         return mask 
     end 
+
+    if (N_batch > 0) & !(isnothing(size_tup))
+        @assert size_tup[4]==N_batch 
+        
+        mask_out = zeros(Bool, size_tup[1], size(mask,1), size(mask,2), size_tup[4])
+
+        for i=1:size_tup[1]
+            for j=1:size_tup[4]
+                mask_out[i,:,:,j] = mask 
+            end 
+        end 
+        
+        return mask_out
+    end 
     
-    if length(size_tup)==2
+    if length(size_tup)==2 # regular SPH matrix 
         return mask 
-    elseif length(size_tup)==3
+    elseif length(size_tup)==3 # lvl x SPH x SPH 
         return cat([reshape(mask, 1, size(mask)...) for i=1:size_tup[1]]..., dims=1)
-    elseif length(size_tup)==4
+    elseif length(size_tup)==4 # size_tup[1] x size_tup[2] x SPH X SPH 
         mask = cat([reshape(mask, 1, size(mask)...) for i=1:size_tup[2]]..., dims=1)
         return mask = cat([reshape(mask, 1, size(mask)...) for i=1:size_tup[1]]..., dims=1)
     else
