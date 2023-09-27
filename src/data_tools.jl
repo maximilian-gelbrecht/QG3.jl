@@ -114,9 +114,9 @@ end
 
 function zeros_SH(p::QG3ModelParameters{T}; N_levels::Int=3, N_batch::Int=0) where T   
     if N_batch > 0 
-        return zeros(T, N_levels, p.L, p.M)
-    else 
         return zeros(T, N_levels, p.L, p.M, N_batch)
+    else 
+        return zeros(T, N_levels, p.L, p.M)
     end 
 end 
 
