@@ -61,6 +61,7 @@ end
 """
     SHtoGrid_dφ(ψ, m::QG3Model{T})
     SHtoGrid_dφ(ψ, m::AbstractGridType{T})
+    SHtoGrid_dφ(ψ, dλ::Derivative_dλ, sh2g::AbstractSHtoGridTransform)
 
 Derivative of input after φ (polar angle) or λ (longtitude) in SH to Grid
 """
@@ -75,6 +76,7 @@ SHtoGrid_dφ(ψ, dλ::Derivative_dλ, sh2g::AbstractSHtoGridTransform) = transfo
 Derivative of input after φ (polar angle) or λ (longtitude) in SH to Grid
 """
 SHtoGrid_dλ(ψ, m) = SHtoGrid_dφ(ψ, m)
+SHtoGrid_dλ(ψ, dl, sh2g) = SHtoGrid_dφ(ψ, dl, sh2g)
 
 """
     SHtoSH_dλ(ψ, m::QG3Model{T})
