@@ -327,6 +327,7 @@ Apply the hyperdiffusion to the input
 """
 ∇8(q::AbstractArray{T,2}, H::Hyperdiffusion{T}) where T = H.∇8 .* q
 ∇8(q::AbstractArray{T,3}, H::Hyperdiffusion{T}) where T = H.∇8_3d .* q
+∇8(q::AbstractArray{T,4}, H::Hyperdiffusion{T}) where T = H.∇8_4d .* q
 ∇8(q::AbstractArray{T,N}, g::AbstractGridType{T}) where {T,N} = ∇8(q, g.∇8)
 ∇8(q::AbstractArray{T,N}, m::QG3Model{T}) where {T,N} = ∇8(q, m.g)
 
