@@ -99,6 +99,22 @@ function transform_grid(data::AbstractArray{T,4}, t::AbstractSHtoGridTransform{f
    return data_sh
 end
 
+function transform_grid(data::AbstractArray{T,5}, t::AbstractSHtoGridTransform{true}) where {T}
+    data_sh = CUDA.zeros(T, size(data,1), t.output_size..., size(data,4), size(data,5))
+    for it ∈ 1:size(data,5)
+        data_sh[:,:,:,:,it] = transform_grid(data[:,:,:,:,it], t)
+    end
+    return data_sh
+ end
+ 
+ function transform_grid(data::AbstractArray{T,5}, t::AbstractSHtoGridTransform{false}) where {T}
+    data_sh =zeros(T, size(data,1), t.output_size..., size(data,4), size(data,5))
+    for it ∈ 1:size(data,5)
+        data_sh[:,:,:,:,it] = transform_grid(data[:,:,:,:,it], t)
+    end
+    return data_sh
+ end
+
 """
 GaussianGridtoSHTransform(p::QG3ModelParameters{T}, N_level::Int=3)
 
