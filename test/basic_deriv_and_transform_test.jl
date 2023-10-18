@@ -1,7 +1,7 @@
 # this is a very basic to test if the transform and derivite work sort of correct, it just checks if it can correctly transform and take derivatives of cosθ
 @testset "Transforms and Derivatives" begin
 
-using QG3, BenchmarkTools, DifferentialEquations, JLD2
+using QG3, BenchmarkTools, OrdinaryDiffEq, JLD2
 
 # load forcing and model parameters
 S, qg3ppars, ψ_0, q_0 = QG3.load_precomputed_data()

@@ -3,7 +3,7 @@
 # this file is an example how to run from a pre-computed model
 @testset "Basic 3D/GPU version (but on CPU)" begin
 
-using QG3, BenchmarkTools, DifferentialEquations, JLD2
+using QG3, BenchmarkTools, OrdinaryDiffEq, JLD2
 
 # load forcing and model parameters
 S, qg3ppars, ψ_0, q_0 = QG3.load_precomputed_data()

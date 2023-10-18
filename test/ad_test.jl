@@ -1,7 +1,7 @@
 # here we test that the model is differentiable. It's hard to come up with a proper test, so right now it just looks that Zygote gives no error and the both implementations have the same gradient
 @testset "Basic AD capability" begin
 
-using QG3, BenchmarkTools, DifferentialEquations, JLD2, Zygote, Flux
+using QG3, BenchmarkTools, OrdinaryDiffEq, JLD2, Zygote, Flux
 
 # load forcing and model parameters
 S, qg3ppars, ψ_0, q_0 = QG3.load_precomputed_data()

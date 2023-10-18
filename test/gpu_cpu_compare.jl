@@ -1,5 +1,5 @@
 
-using CUDA, QG3, BenchmarkTools, DifferentialEquations, JLD2,Flux, Zygote
+using CUDA, QG3, BenchmarkTools, OrdinaryDiffEq, JLD2,Flux, Zygote
 
 @testset "Basic GPU/CPU comparision" begin
 
