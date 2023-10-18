@@ -45,13 +45,10 @@ Base.inv(p::AbstractDifferentiableR2RPlan) = inv(p.plan)
 
 @eval *(p::FFTWR2RPlan{$FORWARD,T}, x::AbstractArray{T}) where T = p.plan * x
 @eval *(p::FFTWR2RPlan{$BACKWARD,T}, x::AbstractArray{T}) where T = p.plan * x
-@eval \(p::FFTWR2RPlan{$FORWARD,T}, x::AbstractArray{T}) where T  = p.plan \ x
-@eval \(p::FFTWR2RPlan{$BACKWARD,T}, x::AbstractArray{T}) where T = p.plan \ x
-    
-@eval LinearAlgebra.ldiv!(y::AbstractArray{T}, p::FFTWR2RPlan{$FORWARD,T}, x::AbstractArray{T}) where T = LinearAlgebra.ldiv!(y, p.plan, x)
-    
-@eval LinearAlgebra.ldiv!(y::AbstractArray{T}, p::FFTWR2RPlan{$BACKWARD,T}, x::AbstractArray{T}) where T = LinearAlgebra.ldiv!(y, p.plan, x)
-    
+
+# division is defined solely for the rrule as unnormalized
+@eval \(p::FFTWR2RPlan{$FORWARD,T}, x::AbstractArray{T}) where T  = inv(p.plan).p * x
+@eval \(p::FFTWR2RPlan{$BACKWARD,T}, x::AbstractArray{T}) where T = inv(p.plan).p * x
 
 struct cur2rPlan{F,U,T,D} <: AbstractDifferentiableR2RPlan{F,U}
     plan::T
@@ -102,10 +99,10 @@ end
 
 @eval *(p::cur2rPlan{$FORWARD,U}, x::CuArray{U}) where U = to_real(p.plan * x, p.dims)
 @eval *(p::cur2rPlan{$BACKWARD,U}, x::CuArray{U}) where U = p.plan * to_complex(x, p.dims, p.i_imag) 
-@eval \(p::cur2rPlan{$FORWARD,U}, x::CuArray{U}) where U = p.plan \ to_complex(x, p.dims, p.i_imag)
-@eval \(p::cur2rPlan{$BACKWARD,U}, x::CuArray{U}) where U = to_real(p.plan \ x, p.dims)
-@eval LinearAlgebra.ldiv!(y::CuArray{U}, p::cur2rPlan{$FORWARD,U}, x::CuArray{U}) where U = LinearAlgebra.ldiv!(y, p.plan, to_complex(x, p.region, p.n))
-@eval LinearAlgebra.ldiv!(y::CuArray{U}, p::cur2rPlan{$BACKWARD,U}, x::CuArray{U}) where U = to_real(LinearAlgebra.ldiv!(y, p.plan, x), p.region)
+
+# division is defined solely for the rrule as unnormalized
+@eval \(p::cur2rPlan{$FORWARD,U}, x::CuArray{U}) where U = inv(p.plan).p * to_complex(x, p.dims, p.i_imag)
+@eval \(p::cur2rPlan{$BACKWARD,U}, x::CuArray{U}) where U = to_real(inv(p.plan).p * x, p.dims)
 
 to_real(input_array::CuArray{T,N}, region::Integer) where {T,N} = CUDA.cat(CUDA.real(input_array), CUDA.imag(input_array), dims=region)
 
@@ -116,7 +113,7 @@ function to_complex(input_array::AbstractArray{T,N}, region::Integer, cutoff_ind
     CUDA.complex.(Re,Im)
 end
 
-@eval function ChainRulesCore.rrule(::typeof(*), P::AbstractDifferentiableR2RPlan{$FORWARD, T}, x::AbstractArray{T}) where T<:Real
+@eval function ChainRulesCore.rrule(::typeof(*), P::FFTWR2RPlan{$FORWARD, T}, x::AbstractArray{T}) where T<:Real
         
     # adapted from AbstractFFTsChainRulesCoreExt rule for rfft
     y = P * x
@@ -141,7 +138,7 @@ end
                 end
                 return ybar_scaled_j
         end
-        x̄ = project_x(inv(P).p * ybar_scaled) # thats an unnormalized inverse transform
+        x̄ = project_x(P \ ybar_scaled) # thats an unnormalized inverse transform
     
         return ChainRulesCore.NoTangent(), ChainRulesCore.NoTangent(), x̄
     end
@@ -149,7 +146,7 @@ end
 end
     
     
-@eval function ChainRulesCore.rrule(::typeof(*), P::AbstractDifferentiableR2RPlan{$BACKWARD, T}, x::AbstractArray{T}) where T<:Real
+@eval function ChainRulesCore.rrule(::typeof(*), P::FFTWR2RPlan{$BACKWARD, T}, x::AbstractArray{T}) where T<:Real
     # adapted from AbstractFFTsChainRulesCoreExt rule for brfft
     y = P * x
     dims = P.dims #P.plan.region
@@ -163,7 +160,7 @@ end
         
     function plan_ir2r_pullback(ȳ)
         ybar = ChainRulesCore.unthunk(ȳ)
-        x̄_scaled = inv(P).p * ybar # R2HC unscaled
+        x̄_scaled = P \ ybar # R2HC unscaled
 
         x̄ = project_x(map(x̄_scaled, CartesianIndices(x̄_scaled)) do x̄_scaled_j, j
                 i = j[halfdim]
@@ -179,4 +176,3 @@ end
     end
     return y, plan_ir2r_pullback
 end
-    

@@ -18,7 +18,7 @@ if CUDA.functional()
 
     qg3p_gpu = QG3Model(qg3ppars_gpu)
     T = eltype(qg3p_gpu)
-    @test transform_grid(ψ_0_gpu, qg3p_gpu) ≈ togpu(transform_grid(ψ_0, qg3p))
+    @test transform_grid(ψ_0_gpu, qg3p_gpu) ≈ togpu(transform_grid(ψ_0, qg3p_cpu))
 
     @test QG3.SHtoGrid_dμ(ψ_0_gpu, qg3p_gpu) ≈ togpu(QG3.SHtoGrid_dμ(ψ_0, qg3p_cpu))
 
