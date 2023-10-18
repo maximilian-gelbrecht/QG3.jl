@@ -88,7 +88,7 @@ end
     end
 
     plan = CUDA.CUFFT.plan_brfft(arr_complex, d, dims)
-    plan.p.pinv = CUDA.CUFFT.plan_inv(plan.p)
+    inv(plan); # pre-allocates the inverse plan for later
 
     y = plan * arr
 
