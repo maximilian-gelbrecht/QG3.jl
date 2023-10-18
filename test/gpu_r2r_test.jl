@@ -32,6 +32,7 @@ if CUDA.functional()
     @test Array((fft_plan * A)[53:end-1]) ≈ (cpu_fft_plan * Ac)[end:-1:52] # reverse order in FFTW HC Format
     @test (fft_plan \ (fft_plan * A)) ≈ (A * size(A,1))
     @test ifft_plan * (fft_plan * A) ≈ (A * size(A,1)) 
+    @test ifft_plan \ (ifft_plan * (fft_plan * A)) ≈ ((fft_plan * A) * size(A,1))
 
     func(x) = ifft_plan*(fft_plan*(W .* x)) ./ size(x,1)
     loss(x,y) = sum(abs2,func(x)-y)

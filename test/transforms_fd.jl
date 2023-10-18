@@ -35,14 +35,18 @@ using QG3, Zygote, CUDA
         Ag_gpu = CUDA.CuArray(Ag)
         Agf_gpu = CUDA.CuArray(Agf)
 
-        r2r_plan = QG3.plan_r2r_AD(Ag_gpu, 3)
-        ir2r_plan = QG3.plan_ir2r_AD(Agf_gpu, size(Ag_gpu,3), 3)
+        r2r_plan_gpu = QG3.plan_r2r_AD(Ag_gpu, 3)
+        ir2r_plan_gpu = QG3.plan_ir2r_AD(Agf_gpu, size(Ag_gpu,3), 3)
 
-        y_gpu, back_gpu = Zygote.pullback(x -> r2r_plan*x, Ag_gpu)
+        cpudiv = (r2r_plan \ Agf);
+        gpudiv = (r2r_plan_gpu \ Agf_gpu);
+        @test cpudiv ≈ Array(gpudiv)
+
+        y_gpu, back_gpu = Zygote.pullback(x -> r2r_plan_gpu*x, Ag_gpu)
         diff_val = (fd_jvp[1] - Array(back_gpu(y_gpu)[1])) 
         @test maximum(abs.(diff_val)) < 1e-4
 
-        y, back = Zygote.pullback(x -> ir2r_plan*x, Agf)
+        y, back = Zygote.pullback(x -> ir2r_plan_gpu*x, Agf)
         fd_jvp = j′vp(central_fdm(5,1), x -> ir2r_plan*x, y, Agf)
         diff_val = (fd_jvp[1] - back(y)[1]) 
         @test maximum(abs.(diff_val)) < 1e-3

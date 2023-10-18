@@ -113,7 +113,7 @@ function to_complex(input_array::AbstractArray{T,N}, region::Integer, cutoff_ind
     CUDA.complex.(Re,Im)
 end
 
-@eval function ChainRulesCore.rrule(::typeof(*), P::FFTWR2RPlan{$FORWARD, T}, x::AbstractArray{T}) where T<:Real
+@eval function ChainRulesCore.rrule(::typeof(*), P::AbstractDifferentiableR2RPlan{$FORWARD, T}, x::AbstractArray{T}) where T<:Real
         
     # adapted from AbstractFFTsChainRulesCoreExt rule for rfft
     y = P * x
@@ -145,8 +145,7 @@ end
     return y, plan_r2r_pullback
 end
     
-    
-@eval function ChainRulesCore.rrule(::typeof(*), P::FFTWR2RPlan{$BACKWARD, T}, x::AbstractArray{T}) where T<:Real
+@eval function ChainRulesCore.rrule(::typeof(*), P::AbstractDifferentiableR2RPlan{$BACKWARD, T}, x::AbstractArray{T}) where T<:Real
     # adapted from AbstractFFTsChainRulesCoreExt rule for brfft
     y = P * x
     dims = P.dims #P.plan.region
