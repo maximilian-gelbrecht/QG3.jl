@@ -21,11 +21,11 @@ if CUDA.functional()
     A3 = CUDA.rand(10,5,100);
     W3 = CUDA.rand(10,5,100);
 
-    fft_plan = plan_cur2r(A, 1)
-    ifft_plan = plan_cuir2r(fft_plan * A, 100, 1)
+    fft_plan = plan_r2r_AD(A, 1)
+    ifft_plan = plan_ir2r_AD(fft_plan * A, 100, 1)
 
     # compare to FFTW 
-    cpu_fft_plan = FFTW.plan_r2r(Ac, FFTW.R2HC)
+    cpu_fft_plan = plan_r2r_AD(Ac, 1)
 
     @test Array((fft_plan * A)[1:50]) ≈ (cpu_fft_plan * Ac)[1:50] 
     @test Array((fft_plan * A)[53:end-1]) ≈ (cpu_fft_plan * Ac)[end:-1:52] # reverse order in FFTW HC Format

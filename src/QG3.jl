@@ -32,8 +32,7 @@ function gpuoff()
     cuda_used[] = false
 end
 
-
-using KernelAbstractions, CUDAKernels
+using KernelAbstractions
 
 togpu(x::AbstractArray) = cuda_used[] ? CuArray(x) : x
 tocpu(x) = cuda_used[] ? Array(x) : x
@@ -54,6 +53,7 @@ Required fields:
 """
 abstract type AbstractGridType{T, onGPU} end
 
+include("r2r_transform.jl")
 include("basic_types.jl")
 include("transforms.jl")
 include("sph_tools.jl")
@@ -62,7 +62,6 @@ include("derivatives.jl")
 include("model_precomputations.jl")
 include("model.jl")
 include("model_gpu.jl")
-include("gpu_r2r_transform.jl")
 include("forcing.jl")
 
 export QG3ModelParameters, QG3Model, transform_SH, transform_grid, level_index, hours

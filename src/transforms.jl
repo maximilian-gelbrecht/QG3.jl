@@ -146,21 +146,21 @@ function GaussianGridtoSHTransform(p::QG3ModelParameters{T}, N_level::Int=3; N_b
     if cuda_used[]
         Pw = reorder_SH_gpu(Pw, p)
 
-        FT_2d = plan_cur2r(A_real[1,:,:], 2)
-        FT_3d = plan_cur2r(A_real, 3)
+        FT_2d = plan_r2r_AD(A_real[1,:,:], 2)
+        FT_3d = plan_r2r_AD(A_real, 3)
 
         if N_batch > 0 
-            FT_4d = plan_cur2r(A_real4d, 3)
+            FT_4d = plan_r2r_AD(A_real4d, 3)
         end
 
         truncate_array = nothing
         outputsize = (p.N_lats, p.N_lons+2)
     else 
-        FT_2d = FFTW.plan_r2r(A_real[1,:,:], FFTW.R2HC, 2)
-        FT_3d = FFTW.plan_r2r(A_real, FFTW.R2HC, 3)
+        FT_2d = plan_r2r_AD(A_real[1,:,:], 2)
+        FT_3d = plan_r2r_AD(A_real, 3)
 
         if N_batch > 0 
-            FT_4d = FFTW.plan_r2r(A_real4d, FFTW.R2HC, 3)
+            FT_4d = plan_r2r_AD(A_real4d, 3)
         end
 
         m_p = 1:p.L
@@ -183,7 +183,7 @@ function transform_SH(A::AbstractArray{P,2}, t::GaussianGridtoSHTransform{P,S,T,
 end
 
 # 3D CPU version 
-function  transform_SH(A::AbstractArray{P,3}, t::GaussianGridtoSHTransform{P,S,T,FT,U,V,TU,false}) where {P,S,T,FT,U,V,TU}
+function transform_SH(A::AbstractArray{P,3}, t::GaussianGridtoSHTransform{P,S,T,FT,U,V,TU,false}) where {P,S,T,FT,U,V,TU}
     FTA = (t.FT_3d * A)[:,:,t.truncate_array]
     @tullio out[ilvl,il,im] := t.Pw[ilat,il,im] * FTA[ilvl,ilat,im]
 end
@@ -245,23 +245,23 @@ function SHtoGaussianGridTransform(p::QG3ModelParameters{T}, N_level::Int=3; N_b
     if cuda_used[]
         P = reorder_SH_gpu(P, p)
 
-        FT_2d = plan_cur2r(A_real[1,:,:], 2)
-        iFT_2d = plan_cuir2r(FT_2d*(A_real[1,:,:]), p.N_lons, 2)
+        FT_2d = plan_r2r_AD(A_real[1,:,:], 2)
+        iFT_2d = plan_ir2r_AD(FT_2d*(A_real[1,:,:]), 2)
 
-        FT_3d = plan_cur2r(A_real, 3)
-        iFT_3d = plan_cuir2r(FT_3d*A_real, p.N_lons, 3)
+        FT_3d = plan_r2r_AD(A_real, 3)
+        iFT_3d = plan_ir2r_AD(FT_3d*A_real, 3)
 
         if N_batch > 0 
-            FT_4d = plan_cur2r(A_real4d, 3)
-            iFT_4d = plan_cuir2r(FT_4d*A_real, p.N_lons, 3)
+            FT_4d = plan_r2r_AD(A_real4d, 3)
+            iFT_4d = plan_ir2r_AD(FT_4d*A_real, 3)
         end 
     
     else 
-        iFT_2d = FFTW.plan_r2r(A_real[1,:,:], FFTW.HC2R, 2)
-        iFT_3d = FFTW.plan_r2r(A_real, FFTW.HC2R, 3)
+        iFT_2d = plan_ir2r_AD(A_real[1,:,:], 2)
+        iFT_3d = plan_ir2r_AD(A_real, 3)
 
         if N_batch > 0 
-            iFT_4d = FFTW.plan_r2r(A_real4d, FFTW.HC2R, 3)
+            iFT_4d = plan_ir2r_AD(A_real4d, 3)
         end 
     end
     outputsize = (p.N_lats, p.N_lons)
@@ -293,14 +293,14 @@ function transform_grid(A::AbstractArray{P,2}, t::SHtoGaussianGridTransform{P,S,
 
     out = batched_vec(t.P,A)
     
-    t.iFT_2d * out
+    (t.iFT_2d * out) ./ t.N_lons # has to be normalized as this is not done by the FFT
 end
 
 # 3D GPU Version
 function transform_grid(A::AbstractArray{P,3}, t::SHtoGaussianGridTransform{P,S,T,FT,U,TU,I,true}) where {P,S,T,FT,U,TU,I}
     @tullio out[lvl, ilat, im] := t.P[ilat, il, im] * A[lvl, il, im]
 
-    t.iFT_3d * out
+    (t.iFT_3d * out) ./ t.N_lons # has to be normalized as this is not done by the FFT
 end
 
 # 4D CPU Version
@@ -309,14 +309,14 @@ function transform_grid(A::AbstractArray{P,4}, t::SHtoGaussianGridTransform{P,S,
     @tullio out[lvl, ilat, im, ib] := t.P[ilat, il, im] * A[lvl, il, im, ib]
 
     # pad with zeros and adjust to indexing of FFTW
-    t.iFT_4d * cat(out[:,:,1:2:end,:], zeros(P, size(A,1), t.N_lats, t.N_lons - t.M, size(A,4)), out[:,:,end-1:-2:2,:], dims=3) ./ t.N_lons # has to be normalized as this is not done by FFTW
+    t.iFT_4d * cat(out[:,:,1:2:end,:], zeros(P, size(A,1), t.N_lats, t.N_lons - t.M, size(A,4)), out[:,:,end-1:-2:2,:], dims=3) ./ t.N_lons # has to be normalized as this is not done by the FFT
 end
 
 # 4D GPU Version 
 function transform_grid(A::AbstractArray{P,4}, t::SHtoGaussianGridTransform{P,S,T,FT,U,TU,I,true}) where {P<:Number,S,T,FT<:AbstractFFTs.Plan,U,TU,I}
     @tullio out[lvl, ilat, im, ib] := t.P[ilat, il, im] * A[lvl, il, im, ib]
 
-    t.iFT_4d * out
+    (t.iFT_4d * out) ./ t.N_lons # has to be normalized as this is not done by the FFT
 end
 
 
