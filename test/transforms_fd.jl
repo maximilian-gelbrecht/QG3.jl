@@ -18,7 +18,7 @@ using QG3, Zygote, CUDA
     r2r_plan = QG3.plan_r2r_AD(Ag, 3)
     Agf = r2r_plan * Ag
 
-    ir2r_plan = QG3.plan_ir2r_AD(Agf, 3)
+    ir2r_plan = QG3.plan_ir2r_AD(Agf, size(Ag,3), 3)
 
     y, back = Zygote.pullback(x -> r2r_plan*x, Ag)
     fd_jvp = j′vp(central_fdm(5,1), x -> r2r_plan*x, y, Ag)
@@ -35,7 +35,7 @@ using QG3, Zygote, CUDA
         Agf_gpu = CUDA.CuArray(Agf)
 
         r2r_plan = QG3.plan_r2r_AD(Ag_gpu, 3)
-        ir2r_plan = QG3.plan_ir2r_AD(Agf_gpu, 3)
+        ir2r_plan = QG3.plan_ir2r_AD(Agf_gpu, size(Ag_gpu,3), 3)
 
         y, back = Zygote.pullback(x -> r2r_plan*x, Ag)
         fd_jvp = j′vp(central_fdm(5,1), x -> r2r_plan*x, y, Ag)

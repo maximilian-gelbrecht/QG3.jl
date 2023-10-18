@@ -246,22 +246,22 @@ function SHtoGaussianGridTransform(p::QG3ModelParameters{T}, N_level::Int=3; N_b
         P = reorder_SH_gpu(P, p)
 
         FT_2d = plan_r2r_AD(A_real[1,:,:], 2)
-        iFT_2d = plan_ir2r_AD(FT_2d*(A_real[1,:,:]), 2)
+        iFT_2d = plan_ir2r_AD(FT_2d*(A_real[1,:,:]), p.N_lons, 2)
 
         FT_3d = plan_r2r_AD(A_real, 3)
-        iFT_3d = plan_ir2r_AD(FT_3d*A_real, 3)
+        iFT_3d = plan_ir2r_AD(FT_3d*A_real, p.N_lons,3)
 
         if N_batch > 0 
             FT_4d = plan_r2r_AD(A_real4d, 3)
-            iFT_4d = plan_ir2r_AD(FT_4d*A_real, 3)
+            iFT_4d = plan_ir2r_AD(FT_4d*A_real, p.N_lons,3)
         end 
     
     else 
-        iFT_2d = plan_ir2r_AD(A_real[1,:,:], 2)
-        iFT_3d = plan_ir2r_AD(A_real, 3)
+        iFT_2d = plan_ir2r_AD(A_real[1,:,:], p.N_lons, 2)
+        iFT_3d = plan_ir2r_AD(A_real, p.N_lons, 3)
 
         if N_batch > 0 
-            iFT_4d = plan_ir2r_AD(A_real4d, 3)
+            iFT_4d = plan_ir2r_AD(A_real4d, p.N_lons, 3)
         end 
     end
     outputsize = (p.N_lats, p.N_lons)

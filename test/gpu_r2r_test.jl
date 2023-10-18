@@ -31,10 +31,9 @@ if CUDA.functional()
     @test Array((fft_plan * A)[1:50]) ≈ (cpu_fft_plan * Ac)[1:50] 
     @test Array((fft_plan * A)[53:end-1]) ≈ (cpu_fft_plan * Ac)[end:-1:52] # reverse order in FFTW HC Format
     @test (fft_plan \ (fft_plan * A)) ≈ A
-    @test ifft_plan * (fft_plan * A) ≈ A
-    @test ifft_plan \ (ifft_plan * (fft_plan * A)) ≈ (fft_plan * A)
+    @test ifft_plan * (fft_plan * A) ≈ (A * size(A,1)) 
 
-    func(x) = ifft_plan*(fft_plan*(W .* x))
+    func(x) = ifft_plan*(fft_plan*(W .* x)) ./ size(x,1)
     loss(x,y) = sum(abs2,func(x)-y)
 
     loss(A,A)
@@ -55,8 +54,8 @@ if CUDA.functional()
 
     @test loss2(A,A) < 1e-4
 
-    fft_plan = plan_cur2r(A2, 2)
-    ifft_plan = plan_cuir2r(fft_plan*A2, 100, 2)
+    fft_plan = plan_r2r_AD(A2, 2)
+    ifft_plan = plan_ir2r_AD(fft_plan*A2, 100, 2)
 
     func(x) = ifft_plan*(fft_plan*(W2 .* x))
     loss(x,y) = sum(abs2,func(x)-y)
@@ -69,8 +68,8 @@ if CUDA.functional()
 
     @test sum(abs2,W2 .- 1) < 1e-3
 
-    fft_plan = plan_cur2r(A3, 3)
-    ifft_plan = plan_cuir2r(fft_plan*A3, 100, 3)
+    fft_plan = plan_r2r_AD(A3, 3)
+    ifft_plan = plan_ir2r_AD(fft_plan*A3, 100, 3)
 
     func(x) = ir2r_plan*(r2r_plan*(W3 .* x))
     loss(x,y) = sum(abs2,func(x)-y)

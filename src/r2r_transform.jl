@@ -28,7 +28,7 @@ end
     return FFTWR2RPlan{$FORWARD,T,typeof(plan),typeof(dims)}(plan, size(arr, halfdim), n, Int(n/2)+1, dims) 
 end 
     
-@eval function plan_ir2r_AD(arr::AbstractArray{T,N}, dims=1) where {T,N}
+@eval function plan_ir2r_AD(arr::AbstractArray{T,N}, d, dims=1) where {T,N}
     plan = FFTW.plan_r2r(arr, FFTW.HC2R, dims)
     halfdim = first(dims)
     y = plan * arr 
