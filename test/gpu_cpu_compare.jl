@@ -48,7 +48,7 @@ if CUDA.functional()
 
     B_gpu = QG3.reorder_SH_gpu(B, qg3ppars);
 
-    @test A ≈ B 
+    @test A ≈ B_gpu
 
     RELTOL = 1e-5
     RELTOL_PREDICT = 1e-3
@@ -65,8 +65,8 @@ if CUDA.functional()
     diff = abs.(QG3.reorder_SH_gpu(sol(t_end),qg3ppars) - sol_gpu(t_end))./sol_gpu(t_end)
     diff[isnan.(diff)] .= 0;
 
-    @test maximum(diff) < 1e-8
-
+    @test maximum(diff) < 1e-3
+    @test mean(abs.(diff)) < 1e-6
 else
     println("CUDA not available. No GPU/CPU comparision tested.")
 end

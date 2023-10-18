@@ -42,16 +42,26 @@ using QG3, Zygote, CUDA
         gpudiv = (r2r_plan_gpu \ Agf_gpu);
         @test cpudiv ≈ Array(gpudiv)
 
+        gpudiv = Array(ir2r_plan_gpu \ Ag_gpu)
+        cpudiv = ir2r_plan \ Ag
+        @test gpudiv[:,:,1:33] ≈ cpudiv[:,:,1:33]
+        @test gpudiv[:,:,35:end-1] ≈ cpudiv[:,:,end:-1:34]
+
         y_gpu, back_gpu = Zygote.pullback(x -> r2r_plan_gpu*x, Ag_gpu)
         diff_val = (fd_jvp[1] - Array(back_gpu(y_gpu)[1])) 
         @test maximum(abs.(diff_val)) < 1e-4
 
-        y, back = Zygote.pullback(x -> ir2r_plan_gpu*x, Agf)
-        fd_jvp = j′vp(central_fdm(5,1), x -> ir2r_plan*x, y, Agf)
-        diff_val = (fd_jvp[1] - back(y)[1]) 
-        @test maximum(abs.(diff_val)) < 1e-3
+        y_gpu, back_gpu = Zygote.pullback(x -> ir2r_plan_gpu*x, Agf_gpu)
+
+        iback_gpu = back_gpu(y_gpu)[1]; 
+        diff_val = Array(iback_gpu[:,:,1:33]) - fd_jvpi[1][:,:,1:33]
+        @test maximum(abs.(diff_val)) < 1e-4
+
+        diff_val = Array(iback_gpu[:,:,35:end-1]) - fd_jvpi[1][:,:,end:-1:34]
+        @test maximum(abs.(diff_val)) < 1e-4
     end 
 
+    
     # test that the AD of the transform are doing what they are supposed to do
     y, back = Zygote.pullback(x -> transform_grid(x, qg3p), A)
     fd_jvp = j′vp(central_fdm(5,1), x -> transform_grid(x, qg3p), y, A)
@@ -64,9 +74,24 @@ using QG3, Zygote, CUDA
     @test maximum(abs.(diff)) < 1e-4
 
     if CUDA.functional() 
-        # test also the correctness of the GPU version
-        # because we don't do automated GPU tests currently anyway
+        
+        QG3.gpuoff()
+        qg3p_cpu = QG3Model(qg3ppars)
+        QG3.gpuon()
 
+        S_gpu, qg3ppars_gpu, ψ_0_gpu, q_0_gpu = QG3.reorder_SH_gpu(S, qg3ppars), togpu(qg3ppars), QG3.reorder_SH_gpu(ψ_0, qg3ppars), QG3.reorder_SH_gpu(q_0, qg3ppars)
+
+        qg3p_gpu = CUDA.@allowscalar QG3Model(qg3ppars_gpu)
+        T = eltype(qg3p_gpu)
+
+        y_cpu, back_cpu = Zygote.pullback(x -> transform_grid(x, qg3p_cpu), AS_cpu)
+        y_gpu, back_gpu = Zygote.pullback(x -> transform_grid(x, qg3p_gpu), AS);
+        @test maximum(Array(back_gpu(y_gpu)[1])[:,1:22,1:22] - back_cpu(y_cpu)[1][:,1:22,1:2:end]) < 1e-4
+        @test maximum(back_cpu(y_cpu)[1][:,1:22,2:2:end] - Array(back_gpu(y_gpu)[1])[:,1:22,35:55]) < 1e-5
+
+        y_cpu, back_cpu = Zygote.pullback(x -> transform_SH(x, qg3p_cpu), AG_cpu)
+        y_gpu, back_gpu = Zygote.pullback(x -> transform_SH(x, qg3p_gpu), AG);
+        @test Array(back_gpu(y_gpu)[1]) ≈ back_cpu(y_cpu)[1]
     end 
 end
 
