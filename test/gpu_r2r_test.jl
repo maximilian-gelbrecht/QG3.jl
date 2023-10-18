@@ -1,3 +1,4 @@
+import QG3: plan_r2r_AD, plan_ir2r_AD
 
 @testset "GPU R2R FFT Wrapper" begin
 

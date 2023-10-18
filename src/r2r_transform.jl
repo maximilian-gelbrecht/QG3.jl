@@ -77,6 +77,16 @@ end
 
 @eval function plan_ir2r_AD(arr::CuArray{T,N}, d::Int, dims=1) where {T,N}
     #here's a complex array needed for making the plan
+    arr_size = [size(arr)...]
+    halfdim = first(dims)
+    n = Int(arr_size[halfdim]/2)
+
+    if !(T <: Complex)
+        arr_size[dims] = n
+        arr_size = Tuple(arr_size)
+        arr_complex = CUDA.zeros(Complex{T}, arr_size...)
+    end
+
     plan = CUDA.CUFFT.plan_brfft(arr_complex, d, dims)
     plan.p.pinv = CUDA.CUFFT.plan_inv(plan.p)
 

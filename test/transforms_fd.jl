@@ -31,11 +31,22 @@ using QG3, Zygote, CUDA
     @test maximum(abs.(diff_val)) < 1e-3
 
     if CUDA.functional()
+        Ag_gpu = CUDA.CuArray(Ag)
+        Agf_gpu = CUDA.CuArray(Agf)
 
-        # test also the correctness of the GPU version
+        r2r_plan = QG3.plan_r2r_AD(Ag_gpu, 3)
+        ir2r_plan = QG3.plan_ir2r_AD(Agf_gpu, 3)
 
+        y, back = Zygote.pullback(x -> r2r_plan*x, Ag)
+        fd_jvp = j′vp(central_fdm(5,1), x -> r2r_plan*x, y, Ag)
+        diff_val = (fd_jvp[1] - back(y)[1]) 
+        @test maximum(abs.(diff_val)) < 1e-4
+
+        y, back = Zygote.pullback(x -> ir2r_plan*x, Agf)
+        fd_jvp = j′vp(central_fdm(5,1), x -> ir2r_plan*x, y, Agf)
+        diff_val = (fd_jvp[1] - back(y)[1]) 
+        @test maximum(abs.(diff_val)) < 1e-3
     end 
-
 
     # test that the AD of the transform are doing what they are supposed to do
     y, back = Zygote.pullback(x -> transform_grid(x, qg3p), A)
@@ -49,13 +60,9 @@ using QG3, Zygote, CUDA
     @test maximum(abs.(diff)) < 1e-4
 
     if CUDA.functional() 
-
         # test also the correctness of the GPU version
-
+        # because we don't do automated GPU tests currently anyway
 
     end 
-
-
-
 end
 
