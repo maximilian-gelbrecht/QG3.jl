@@ -84,13 +84,13 @@ end
     if !(T <: Complex)
         arr_size[dims] = n
         arr_size = Tuple(arr_size)
-        arr_complex = CUDA.zeros(Complex{T}, arr_size...)
+        arr_complex = CUDA.rand(Complex{T}, arr_size...)
     end
 
     plan = CUDA.CUFFT.plan_brfft(arr_complex, d, dims)
     inv(plan); # pre-allocates the inverse plan for later
 
-    y = plan * arr
+    y = plan * arr_complex
 
     halfdim = first(dims)
     d = size(y, halfdim)
