@@ -1,6 +1,6 @@
 module QG3
 
-using GSL, CUDA, FastGaussQuadrature, Tullio, StatsBase, LinearAlgebra, FastTransforms, JLD2, Zygote, NNlib, NNlibCUDA, AbstractFFTs
+using GSL, CUDA, FastGaussQuadrature, Tullio, StatsBase, LinearAlgebra, JLD2, Zygote, NNlib, NNlibCUDA, AbstractFFTs
 import FFTW
 import CUDA.CUFFT
 

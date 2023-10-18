@@ -83,9 +83,9 @@ end
     y = plan * arr
 
     halfdim = first(dims)
-    d = 
-    n =
-    i_imag = # set this correctly to the cutoff index 
+    d = size(y, halfdim)
+    n = size(arr, halfdim)
+    i_imag = Int(n/2)# set this correctly to the cutoff index 
 
     return cur2rPlan{$BACKWARD,T,typeof(plan),typeof(dims)}(plan, d, n, i_imag, dims)
 end
