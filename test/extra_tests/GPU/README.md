@@ -1,0 +1,1 @@
+The Jupyter notebook is a copy of most GPU related tests from the regular tests. Without buildkit set up, it's quite a hassle for me to run the tests on GPU, and the notebook makes this easier. 

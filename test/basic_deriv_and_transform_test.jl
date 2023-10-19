@@ -1,13 +1,19 @@
 # this is a very basic to test if the transform and derivite work sort of correct, it just checks if it can correctly transform and take derivatives of cosθ
 @testset "Transforms and Derivatives" begin
 
-using QG3, BenchmarkTools, DifferentialEquations, JLD2
+using QG3, BenchmarkTools, OrdinaryDiffEq, JLD2
 
 # load forcing and model parameters
 S, qg3ppars, ψ_0, q_0 = QG3.load_precomputed_data()
 
 qg3p = QG3Model(qg3ppars)
 g = qg3p.g
+
+# test that the transform is unitary ()
+@test maximum(abs.(transform_SH(transform_grid(ψ_0, g),g) - ψ_0)) < 1e-2
+@test maximum(abs.(transform_SH(transform_grid(q_0, g),g) - q_0)) < 1e-1
+@test mean(abs.(transform_grid(transform_SH(transform_grid(ψ_0, g),g),g) - transform_grid(ψ_0,g)) ./ abs.(transform_grid(ψ_0,g))) < 1e-2
+@test mean(abs.(transform_grid(transform_SH(transform_grid(q_0, g),g),g) - transform_grid(q_0,g)) ./ abs.(transform_grid(q_0,g))) < 1e-2
 
 cosθ = zeros(eltype(qg3ppars), qg3ppars.N_lats, qg3ppars.N_lons)
 msinθ = zeros(eltype(qg3ppars), qg3ppars.N_lats, qg3ppars.N_lons)

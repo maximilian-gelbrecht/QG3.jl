@@ -4,7 +4,7 @@
 
 @testset "Basic 2D/CPU version" begin
 
-using QG3, BenchmarkTools, DifferentialEquations, JLD2
+using QG3, BenchmarkTools, OrdinaryDiffEq, JLD2
 
 # load forcing and model parameters
 @load "../data/t21-precomputed-S.jld2" S
