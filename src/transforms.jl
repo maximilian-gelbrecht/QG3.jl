@@ -253,7 +253,7 @@ function SHtoGaussianGridTransform(p::QG3ModelParameters{T}, N_level::Int=3; N_b
 
         if N_batch > 0 
             FT_4d = plan_r2r_AD(A_real4d, 3)
-            iFT_4d = plan_ir2r_AD(FT_4d*A_real, p.N_lons,3)
+            iFT_4d = plan_ir2r_AD(FT_4d*A_real4d, p.N_lons,3)
         end 
     
     else 

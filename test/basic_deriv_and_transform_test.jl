@@ -78,6 +78,9 @@ A = rand(eltype(qg3ppars), size(cosθ)...)
 qg3p_4d = QG3Model(qg3ppars; N_batch=2)
 g4d = qg3p_4d.g
 
+@test !isnothing(g4d.SHtoG.iFT_4d)
+@test !isnothing(g4d.GtoSH.FT_4d)
+
 cSH = transform_SH(cosθ, g4d)
 
 @test transform_SH(cosθ, g) ≈ cSH
