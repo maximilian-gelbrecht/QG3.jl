@@ -205,13 +205,13 @@ function transform_SH(A::AbstractArray{P,3}, t::GaussianGridtoSHTransform{P,S,T,
 end
 
 # 4D CPU version 
-function  transform_SH(A::AbstractArray{P,4}, t::GaussianGridtoSHTransform{P,S,T,FT,U,V,TU,false}) where {P<:Number,S,T,FT<:AbstractFFTs.Plan,U,V,TU}
+function  transform_SH(A::AbstractArray{P,4}, t::GaussianGridtoSHTransform{P,S,T,FT,U,V,TU,false}) where {P<:Number,S,T,FT<:Union{AbstractFFTs.Plan,AbstractDifferentiableR2RPlan},U,V,TU}
     FTA = (t.FT_4d * A)[:,:,t.truncate_array,:]
     @tullio out[ilvl,il,im,ib] := t.Pw[ilat,il,im] * FTA[ilvl,ilat,im,ib]
 end
 
 # 4D GPU version 
-function transform_SH(A::AbstractArray{P,4}, t::GaussianGridtoSHTransform{P,S,T,FT,U,V,TU,true}) where {P<:Number,S,T,FT<:AbstractFFTs.Plan,U,V,TU}
+function transform_SH(A::AbstractArray{P,4}, t::GaussianGridtoSHTransform{P,S,T,FT,U,V,TU,true}) where {P<:Number,S,T,FT<:Union{AbstractFFTs.Plan,AbstractDifferentiableR2RPlan},U,V,TU}
     FTA = t.FT_4d * A
 
     # truncation is performed in this step as Pw has 0s where the expansion is truncated
@@ -304,7 +304,7 @@ function transform_grid(A::AbstractArray{P,3}, t::SHtoGaussianGridTransform{P,S,
 end
 
 # 4D CPU Version
-function transform_grid(A::AbstractArray{P,4}, t::SHtoGaussianGridTransform{P,S,T,FT,U,TU,I,false}) where {P<:Number,S,T,FT<:AbstractFFTs.Plan,U,TU,I}
+function transform_grid(A::AbstractArray{P,4}, t::SHtoGaussianGridTransform{P,S,T,FT,U,TU,I,false}) where {P<:Number,S,T,FT<:Union{AbstractFFTs.Plan,AbstractDifferentiableR2RPlan},U,TU,I}
 
     @tullio out[lvl, ilat, im, ib] := t.P[ilat, il, im] * A[lvl, il, im, ib]
 
@@ -313,7 +313,7 @@ function transform_grid(A::AbstractArray{P,4}, t::SHtoGaussianGridTransform{P,S,
 end
 
 # 4D GPU Version 
-function transform_grid(A::AbstractArray{P,4}, t::SHtoGaussianGridTransform{P,S,T,FT,U,TU,I,true}) where {P<:Number,S,T,FT<:AbstractFFTs.Plan,U,TU,I}
+function transform_grid(A::AbstractArray{P,4}, t::SHtoGaussianGridTransform{P,S,T,FT,U,TU,I,true}) where {P<:Number,S,T,FT<:Union{AbstractFFTs.Plan,AbstractDifferentiableR2RPlan},U,TU,I}
     @tullio out[lvl, ilat, im, ib] := t.P[ilat, il, im] * A[lvl, il, im, ib]
 
     (t.iFT_4d * out) ./ t.N_lons # has to be normalized as this is not done by the FFT
