@@ -24,7 +24,7 @@ Transforms `data` into the spherical harmonics domain. The coefficents are order
 transform_SH
 
 # CPU 4D Version (not meant for the model, but for data processing)
-function transform_SH(data::AbstractArray{T,4}, t::AbstractGridtoSHTransform{false}) where T<:Number
+function transform_SH_data(data::AbstractArray{T,4}, t::AbstractGridtoSHTransform{false}) where T<:Number
     data_sh = zeros(T, size(data, 1), t.output_size..., size(data,4))
     for it ∈ 1:size(data,4)
         data_sh[:,:,:,it] = transform_SH(data[:,:,:,it], t)
@@ -33,7 +33,7 @@ function transform_SH(data::AbstractArray{T,4}, t::AbstractGridtoSHTransform{fal
 end
 
 # GPU 4D Version (not meant for the model, but for data processing)
-function transform_SH(data::AbstractArray{T,4}, t::AbstractGridtoSHTransform{true}) where T<:Number
+function transform_SH_data(data::AbstractArray{T,4}, t::AbstractGridtoSHTransform{true}) where T<:Number
     data_sh = CUDA.zeros(T, size(data, 1), t.output_size..., size(data,4))
     for it ∈ 1:size(data,4)
         data_sh[:,:,:,it] = transform_SH(data[:,:,:,it], t)
@@ -83,7 +83,7 @@ function setpvzero(data::AbstractArray{T,4}) where {T}
     data_out
 end 
 
-function transform_grid(data::AbstractArray{T,4}, t::AbstractSHtoGridTransform{true}) where {T}
+function transform_grid_data(data::AbstractArray{T,4}, t::AbstractSHtoGridTransform{true}) where {T}
    data_sh = CUDA.zeros(T, size(data,1), t.output_size..., size(data,4))
    for it ∈ 1:size(data,4)
        data_sh[:,:,:,it] = transform_grid(data[:,:,:,it], t)
@@ -91,7 +91,7 @@ function transform_grid(data::AbstractArray{T,4}, t::AbstractSHtoGridTransform{t
    return data_sh
 end
 
-function transform_grid(data::AbstractArray{T,4}, t::AbstractSHtoGridTransform{false}) where {T}
+function transform_grid_data(data::AbstractArray{T,4}, t::AbstractSHtoGridTransform{false}) where {T}
    data_sh =zeros(T, size(data,1), t.output_size..., size(data,4))
    for it ∈ 1:size(data,4)
        data_sh[:,:,:,it] = transform_grid(data[:,:,:,it], t)
@@ -99,7 +99,7 @@ function transform_grid(data::AbstractArray{T,4}, t::AbstractSHtoGridTransform{f
    return data_sh
 end
 
-function transform_grid(data::AbstractArray{T,5}, t::AbstractSHtoGridTransform{true}) where {T}
+function transform_grid_data(data::AbstractArray{T,5}, t::AbstractSHtoGridTransform{true}) where {T}
     data_sh = CUDA.zeros(T, size(data,1), t.output_size..., size(data,4), size(data,5))
     for it ∈ 1:size(data,5)
         data_sh[:,:,:,:,it] = transform_grid(data[:,:,:,:,it], t)
@@ -107,7 +107,7 @@ function transform_grid(data::AbstractArray{T,5}, t::AbstractSHtoGridTransform{t
     return data_sh
  end
  
- function transform_grid(data::AbstractArray{T,5}, t::AbstractSHtoGridTransform{false}) where {T}
+ function transform_grid_data(data::AbstractArray{T,5}, t::AbstractSHtoGridTransform{false}) where {T}
     data_sh =zeros(T, size(data,1), t.output_size..., size(data,4), size(data,5))
     for it ∈ 1:size(data,5)
         data_sh[:,:,:,:,it] = transform_grid(data[:,:,:,:,it], t)
