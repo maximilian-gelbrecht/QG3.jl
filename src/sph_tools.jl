@@ -114,6 +114,17 @@ function reorder_SH_cpu(A::AbstractArray{T,4},p::QG3ModelParameters) where T
     return out[:,:,1:p.M,:]
 end 
 
+function reorder_SH_cpu(A::AbstractArray{T,5},p::QG3ModelParameters) where T
+    @assert size(A,2) == p.N_lats "Wrong array size, probably not GPU SH array"
+    @assert size(A,3) == p.N_lons+2 "Wrong array size, probably not GPU SH array"
+    
+    Nlons2 = Int((p.N_lons+2)/2)
+    reindex = collect(Iterators.flatten(zip(1:Nlons2,Nlons2+2:p.N_lons+2)))
+    
+    out = Array(A)[:,1:p.L, reindex,:,:]
+    return out[:,:,1:p.M,:,:]
+end 
+
 function get_uppertriangle_sum(A)
     cumsum = 0
     for i=1:size(A,1)
