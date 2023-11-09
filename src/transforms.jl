@@ -107,13 +107,16 @@ function transform_grid_data(data::AbstractArray{T,5}, t::AbstractSHtoGridTransf
     return data_sh
  end
  
- function transform_grid_data(data::AbstractArray{T,5}, t::AbstractSHtoGridTransform{false}) where {T}
+function transform_grid_data(data::AbstractArray{T,5}, t::AbstractSHtoGridTransform{false}) where {T}
     data_sh =zeros(T, size(data,1), t.output_size..., size(data,4), size(data,5))
     for it ∈ 1:size(data,5)
         data_sh[:,:,:,:,it] = transform_grid(data[:,:,:,:,it], t)
     end
     return data_sh
- end
+end
+
+transform_grid_data(data, p::QG3Model) = transform_grid_data(data, p.g.SHtoG)
+transform_SH_data(data, p::QG3Model) = transform_SH_data(data, p.g.GtoSH)
 
 """
 GaussianGridtoSHTransform(p::QG3ModelParameters{T}, N_level::Int=3)
