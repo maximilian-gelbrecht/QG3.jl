@@ -73,6 +73,10 @@ end
 Reorders the SH coefficient so that computations on CPU are more efficient, inverse of [`reorder_SH_gpu`](@ref)
 """
 function reorder_SH_cpu(A::AbstractArray{T,2},p::QG3ModelParameters) where T
+    if size(A) == (p.L, p.M)
+        return A 
+    end 
+    
     @assert size(A) == (p.N_lats, p.N_lons+2) "Wrong array size, probably not GPU SH array"
     
     Nlons2 = Int((p.N_lons+2)/2)
@@ -88,6 +92,10 @@ end
 Reorders the SH coefficient so that computations on CPU are more efficient, inverse of [`reorder_SH_gpu`](@ref)
 """
 function reorder_SH_cpu(A::AbstractArray{T,3},p::QG3ModelParameters) where T
+    if size(A)[2:3] == (p.L, p.M)
+        return A 
+    end 
+    
     @assert size(A,2) == p.N_lats "Wrong array size, probably not GPU SH array"
     @assert size(A,3) == p.N_lons+2 "Wrong array size, probably not GPU SH array"
     
@@ -104,6 +112,10 @@ end
 Reorders the SH coefficient so that computations on CPU are more efficient, inverse of [`reorder_SH_gpu`](@ref)
 """
 function reorder_SH_cpu(A::AbstractArray{T,4},p::QG3ModelParameters) where T
+    if size(A)[2:3] == (p.L, p.M)
+        return A 
+    end 
+    
     @assert size(A,2) == p.N_lats "Wrong array size, probably not GPU SH array"
     @assert size(A,3) == p.N_lons+2 "Wrong array size, probably not GPU SH array"
     
@@ -115,6 +127,10 @@ function reorder_SH_cpu(A::AbstractArray{T,4},p::QG3ModelParameters) where T
 end 
 
 function reorder_SH_cpu(A::AbstractArray{T,5},p::QG3ModelParameters) where T
+    if size(A)[2:3] == (p.L, p.M)
+        return A 
+    end 
+    
     @assert size(A,2) == p.N_lats "Wrong array size, probably not GPU SH array"
     @assert size(A,3) == p.N_lons+2 "Wrong array size, probably not GPU SH array"
     
