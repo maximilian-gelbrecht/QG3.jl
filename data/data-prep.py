@@ -1,9 +1,14 @@
 # this script uses windspharm to compute streamfunction data out of ERA5 u/v fields to use with the library
 # conda environment: windspharm
+#
 # cdo command for pre-processing: cdo remapbil,n32 ifile ofile
 # for i in $(ls); do cdo remapbil,n32 ${i} regrid/${i}-t42.nc; done
+#
 # then get a interative job on the hpc for this script (it needs more than 4GB RAM): 
 # srun --qos=priority --ntasks-per-node=8 --pty bash 
+#
+# merge final result with cdo 
+# cdo mergetime *nc outfile.nc
 
 import iris
 import numpy as np 
