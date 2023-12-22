@@ -5,7 +5,7 @@
 # for i in $(ls); do cdo remapbil,n32 ${i} regrid/${i}-t42.nc; done
 #
 # then get a interative job on the hpc for this script (it needs more than 4GB RAM): 
-# srun --qos=priority --ntasks-per-node=8 --pty bash 
+# srun --qos=priority --ntasks-per-node=14 --pty bash 
 #
 # merge final result with cdo 
 # cdo mergetime *nc outfile.nc
@@ -23,12 +23,13 @@ V_DIR = 'v_component_of_wind/hourly/'
 U_FILENAME_BASE = 'ERA5-u-200500800hPa-'
 V_FILENAME_BASE = 'ERA5-v-200500800hPa-'
 PSI_FILENAME_BASE = 'ERA5-sf-200500800hPa-'
-years = np.concatenate((range(79,99),range(00,20)))
+#years = np.concatenate((range(79,100,range(00,21)))
+years = np.concatenate((range(99,100),range(00,21)))
 
 for iyear in years: 
     # Read u and v wind components from file.
-    u = iris.load_cube(DATA_DIR+U_DIR+U_FILENAME_BASE+str(iyear)+'.nc-t42.nc')
-    v = iris.load_cube(DATA_DIR+V_DIR+V_FILENAME_BASE+str(iyear)+'.nc-t42.nc')
+    u = iris.load_cube(DATA_DIR+U_DIR+U_FILENAME_BASE+f'{iyear:02d}'+'.nc-t42.nc')
+    v = iris.load_cube(DATA_DIR+V_DIR+V_FILENAME_BASE+f'{iyear:02d}'+'.nc-t42.nc')
 
     # Create an instance of the VectorWind class to do the computations.
     w = VectorWind(u, v)
