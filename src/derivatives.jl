@@ -25,7 +25,7 @@ Required fields:
 abstract type AbstractμDerivative{onGPU} <: AbstractDerivative{onGPU} end
 
 """
-    Derivative_dλ
+    Derivative_dλ(p::QG3ModelParameters{T}; N_batch::Int=0)
 
 Pre-computes Derivatives by longitude. Uses the SH relation, is therefore independ from the grid.
 """
@@ -132,7 +132,7 @@ end
 change_msign(A::AbstractArray{T,3}, i::Integer, swap_array::AbstractArray{Int,1}) where T<:Number = @inbounds view(A,i,:,swap_array)
 
 """
-    GaussianGrid_dμ(p::QG3ModelParameters{T}, N_level::Int=3)
+    GaussianGrid_dμ(p::QG3ModelParameters{T}, N_level::Int=3; N_batch::Int=0)
 
 Pre-computes Pseudo-spectral approach to computing derivatives with repsect to μ = sin(lats). Derivatives are called with following the naming scheme: "Domain1Input"to"Domain2Output"_d"derivativeby"
 
@@ -226,7 +226,7 @@ SHtoGrid_dθ(ψ::AbstractArray{T,3}, d::AbstractμDerivative) where {T} = d.msin
 SHtoGrid_dθ(ψ::AbstractArray{T,4}, d::AbstractμDerivative) where {T} = d.msinθ_4d .* SHtoGrid_dμ(ψ, d)
 
 """
-    Laplacian(p::QG3ModelParameters{T}; init_inverse=false, R::T=T(1)) where T
+    Laplacian(p::QG3ModelParameters{T}; init_inverse=false, R::T=T(1), N_batch::Int=0, kwargs...) where T
 
 Initializes the `Laplacian` in spherical harmonics and if `init_inverse==true` also its inverse
 
