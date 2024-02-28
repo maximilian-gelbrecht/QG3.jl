@@ -119,9 +119,14 @@ transform_grid_data(data, p::QG3Model) = transform_grid_data(data, p.g.SHtoG)
 transform_SH_data(data, p::QG3Model) = transform_SH_data(data, p.g.GtoSH)
 
 """
-GaussianGridtoSHTransform(p::QG3ModelParameters{T}, N_level::Int=3)
+    GaussianGridtoSHTransform(p::QG3ModelParameters{T}, N_level::Int=3; N_batch::Int=0)
 
-Returns transform struct, that can be used with `transform_SH`. This is one is for a Gaussian Grid.
+Returns transform struct, that can be used with `transform_SH`. Transforms Gaussian Grid data to real spherical harmonics coefficients that follow the coefficient logic explained in the main documenation.
+
+## Additional input arguments: 
+
+* `N_level`: defines the transform for `N_level` horizontal levels. Has to be equal to three for the QG3 model itself, but might be different for other applications. 
+* `N_batch`: defines the transforms with an additional batch dimension for ML tasks, if `N_batch==0` this is omitted
 """
 struct GaussianGridtoSHTransform{P,S,T,FT,U,V<:Union{AbstractVector,Nothing},TU,onGPU} <: AbstractGridtoSHTransform{onGPU}
     FT_2d::S
@@ -221,6 +226,16 @@ function transform_SH(A::AbstractArray{P,4}, t::GaussianGridtoSHTransform{P,S,T,
     @tullio out[ilvl,il,im,ib] := t.Pw[ilat,il,im] * FTA[ilvl,ilat,im,ib]
 end
 
+"""
+    SHtoGaussianGridTransform(p::QG3ModelParameters{T}, N_level::Int=3; N_batch::Int=0)
+
+Returns transform struct, that can be used with `transform_grid`. Transforms real spherical harmonics coefficients to Gaussian grid data, follows the coefficient logic explained in the main documenation.
+
+## Additional input arguments: 
+
+* `N_level`: defines the transform for `N_level` horizontal levels. Has to be equal to three for the QG3 model itself, but might be different for other applications. 
+* `N_batch`: defines the transforms with an additional batch dimension for ML tasks, if `N_batch==0` this is omitted
+"""
 struct SHtoGaussianGridTransform{R,S,T,FT,U,TU,I<:Integer,onGPU} <: AbstractSHtoGridTransform{onGPU}
     iFT_2d::S
     iFT_3d::T

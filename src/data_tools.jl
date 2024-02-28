@@ -82,14 +82,16 @@ end
 """
 
 """
-    load_precomputed_data()
+    load_precomputed_data(GPU=false)
 
 Loads the precomputed data that is saved in the package. It is computed from ERA5 T21 u/v data. Returns in order
 
 * `S`, `qg3ppars`, `ψ_0`, `q_0`
 * Forcing, Parameters, Streamfunction initial conditions, vorticity initial conditions
+
+If `GPU==true` returns those in GPU SPH order as `CuArrays`, otherwise uses CPU SPH order. 
 """
-function load_precomputed_data()
+function load_precomputed_data(; GPU=false)
 
     path = joinpath(dirname(@__FILE__), "..", "data/")
 
@@ -97,6 +99,10 @@ function load_precomputed_data()
     @load string(path,"t21-precomputed-p.jld2") qg3ppars
     @load string(path,"t21-precomputed-sf.jld2") ψ_0
     @load string(path,"t21-precomputed-q.jld2") q_0
+
+    if GPU 
+        S, qg3ppars, ψ_0, q_0 = QG3.reorder_SH_gpu(S, qg3ppars), togpu(qg3ppars), QG3.reorder_SH_gpu(ψ_0, qg3ppars), QG3.reorder_SH_gpu(q_0, qg3ppars)
+    end 
 
     return S, qg3ppars, ψ_0, q_0
 end

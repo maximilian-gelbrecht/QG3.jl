@@ -140,7 +140,7 @@ show(io::IO, g::GaussianGrid{T, G, S, M, L, LA, H, TU, true}) where {T, G, S, M,
 show(io::IO, g::GaussianGrid{T, G, S, M, L, LA, H, TU, false}) where {T, G, S, M, L, LA, H, TU} = print(io," Gaussian Grid on CPU")
 
 """
-    grid(p::QG3ModelParameters{T})
+    grid(p::QG3ModelParameters{T}, gridtype::String, N_level::Int=3; N_batch::Int=0, kwargs...)
 
 Convience constructor for the [`AbstractGridType`](@ref) based on the parameters set in `p`.
 """

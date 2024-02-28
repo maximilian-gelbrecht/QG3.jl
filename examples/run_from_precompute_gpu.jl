@@ -2,7 +2,7 @@
 import Pkg 
 Pkg.activate("examples")
 
-using QG3, BenchmarkTools, DifferentialEquations, JLD2
+using QG3, BenchmarkTools, DifferentialEquations, JLD2, CUDA
 
 # load forcing and model parameters
 
@@ -13,11 +13,7 @@ using QG3, BenchmarkTools, DifferentialEquations, JLD2
 #@load "data/t21-precomputed-q.jld2" q_0
 
 # or use the function that automatically loads the files that are saved in the repository
-S, qg3ppars, ψ_0, q_0 = QG3.load_precomputed_data()
-
-# the precomputed fields are loaded on the CPU and are in the wrong SH coefficient convention
-S, qg3ppars, ψ_0, q_0 = QG3.reorder_SH_gpu(S, qg3ppars), togpu(qg3ppars), QG3.reorder_SH_gpu(ψ_0, qg3ppars), QG3.reorder_SH_gpu(q_0, qg3ppars)
-
+S, qg3ppars, ψ_0, q_0 = QG3.load_precomputed_data(GPU=true)
 
 # pre-computations are partially performed on CPU, so we have to allow scalarindexing
 qg3p = CUDA.@allowscalar QG3Model(qg3ppars)
