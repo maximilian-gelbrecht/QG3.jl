@@ -83,13 +83,13 @@ g4d = qg3p_4d.g
 
 cSH = transform_SH(cosθ, g4d)
 
-@test transform_SH(cosθ, g) ≈ cSH
-@test transform_grid(cSH, g) ≈ transform_grid(cSH, g4d)
+@test QG3.transform_SH_data(cosθ, qg3p) ≈ cSH
+@test QG3.transform_grid_data(cSH, qg3p) ≈ transform_grid(cSH, g4d)
 
 ASH = transform_SH(A, g4d)
 
-@test transform_SH(A, g) ≈ ASH
-@test transform_grid(ASH, g) ≈ transform_grid(ASH, g4d)
+@test QG3.transform_SH_data(A, qg3p) ≈ ASH
+@test QG3.transform_grid_data(ASH, qg3p) ≈ transform_grid(ASH, g4d)
 
 @test QG3.SHtoGrid_dλ(ASH[:,:,:,1],g) ≈ QG3.SHtoGrid_dλ(ASH,g4d)[:,:,:,1]
 @test QG3.SHtoGrid_dλ(ASH[:,:,:,2],g) ≈ QG3.SHtoGrid_dλ(ASH,g4d)[:,:,:,2]
