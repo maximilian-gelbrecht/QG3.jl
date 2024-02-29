@@ -36,28 +36,15 @@ TR(ψ::AbstractArray{T,3}, m::QG3Model{T}) where T = reshape(batched_vec(m.TR_ma
 
 Computes the dissipiation of all levels, 850hPa has additional Ekman dissipation.
 """
-D(ψ::AbstractArray{T,3}, q::AbstractArray{T,3}, m::QG3Model{T}) where T = add_to_level(TR(ψ, m) + H(q, m), EK(ψ[3,:,:], m), 3)
-
-"""
-    add_to_level(ψ::AbstractArray{T,3}, ψ_i::AbstractArray{T,2}, i::Integer)
-
-Differentiable and GPU compatible way of adding only to one of the levels of the model.
-"""
-function add_to_level(ψ::AbstractArray{T,3}, ψ_i::AbstractArray{T,2}, i::Integer) where T
-    ψ[i,:,:] += ψ_i
-    ψ
-end
-
-Zygote.@adjoint function add_to_level(ψ::AbstractArray{T,3}, ψ_i::AbstractArray{T,2}, i::Integer) where T
-    return (add_to_level(ψ, ψ_i::AbstractArray{T,2}, i), Δ->(Δ,Δ,))
-end
-
+function D(ψ::AbstractArray{T,3}, q::AbstractArray{T,3}, m::QG3Model{T}) where T 
+    EK_out = reshape(EK(ψ[3,:,:], m),1,size(q,2),size(q,3))
+    return TR(ψ, m) + H(q, m) + cat(zero(EK_out), zero(EK_out), EK_out, dims=1)
+end 
 
 """
     QG3MM_gpu(q, p, t)
 
-Base model used in the MM paper, with symmetrization around the equator
-
+Base model used in the MM paper
 dq = - J(ψ,q) - D(ψ,q) + S
 """
 function QG3MM_gpu(q, m, t)

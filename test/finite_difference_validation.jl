@@ -1,7 +1,7 @@
 # test if the gradients of the transforms are correct with FiniteDifferences.jl 
 
 using FiniteDifferences
-using QG3, Zygote, CUDA
+using QG3, Zygote, CUDA, StatsBase
 
 @testset "Transforms AD correctness" begin
 
@@ -93,5 +93,48 @@ using QG3, Zygote, CUDA
         y_gpu, back_gpu = Zygote.pullback(x -> transform_SH(x, qg3p_gpu), AG);
         @test Array(back_gpu(y_gpu)[1]) ≈ back_cpu(y_cpu)[1]
     end 
+
+    # test J 
+    y, back = Zygote.pullback(x -> QG3.J(q_0, x, qg3p), A)
+    fd_jvp = j′vp(central_fdm(11,1), x -> QG3.J(q_0, A, qg3p), y, A)
+    diff = (fd_jvp[1] - back(y)[1]) 
+    @test mean(abs.(diff)) < 1e-3
+    @test maximum(abs.(diff)) < 1e-2
+
+    # test qprimetoψ
+    y, back = Zygote.pullback(x -> QG3.qprimetoψ(qg3p, x), q_0)
+    fd_jvp = j′vp(central_fdm(5,1), x -> QG3.qprimetoψ(qg3p, x), y, q_0)
+    diff = (fd_jvp[1] - back(y)[1]) 
+    @test maximum(abs.(diff)) < 1e-4
+
+    # test H    
+    y, back = Zygote.pullback(x -> QG3.H(x, qg3p), A)
+    fd_jvp = j′vp(central_fdm(5,1), x -> QG3.H(x, qg3p), y, A)
+    diff = (fd_jvp[1] - back(y)[1]) 
+    @test maximum(abs.(diff)) < 1e-8
+
+    # test TR 
+    y, back = Zygote.pullback(x -> QG3.TR(x, qg3p), A)
+    fd_jvp = j′vp(central_fdm(5,1), x -> QG3.TR(x, qg3p), y, A)
+    diff = (fd_jvp[1] - back(y)[1]) 
+    @test maximum(abs.(diff)) < 1e-6
+
+    # test EK 
+    y, back = Zygote.pullback(x -> QG3.EK(x, qg3p), A[3,:,:])
+    fd_jvp = j′vp(central_fdm(5,1), x -> QG3.EK(x, qg3p), y, A[3,:,:])
+    diff = (fd_jvp[1] - back(y)[1]) 
+    @test maximum(abs.(diff)) < 1e-6
+
+    # test D 
+    y, back = Zygote.pullback(x -> QG3.D(x, q_0, qg3p), A)
+    fd_jvp = j′vp(central_fdm(8,1), x -> QG3.D(x, q_0, qg3p), y, A)
+    diff = (fd_jvp[1] - back(y)[1]) 
+    @test maximum(abs.(diff)) < 1e-6
+ 
+    # test complete RHS    
+    y, back = Zygote.pullback(x -> QG3.QG3MM_gpu(x, [qg3p, S], 0), A)
+    fd_jvp = j′vp(central_fdm(15,1), x -> QG3.QG3MM_gpu(x, [qg3p, S], 0), y, A)
+    diff = (fd_jvp[1] - back(y)[1]) 
+    @test maximum(abs.(diff)) < 1e-6
 end
 
