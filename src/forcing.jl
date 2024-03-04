@@ -1,4 +1,6 @@
 """
+    compute_S_Roads(data::AbstractArray{T,4}, m::QG3Model{T}; datasource="ψ")
+    
 Pre-compute Forcing S data level,X,Y,t
 
 Compute the forcing according to Roads, this is outlined in the MM and Corti paper as well.
