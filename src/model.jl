@@ -132,7 +132,8 @@ Computes the Horizontal diffusion at level `i`, q' is anomolous pv (without cori
 H(qprime::AbstractArray{T,3}, i::Int, m::QG3Model{T}) where T<: Number = cH∇8(qprime[i,:,:], m)
 
 u(ψ::AbstractArray{T,N}, m::QG3Model{T}) where {T,N} = T(-1) .* SHtoGrid_dϕ(ψ, m)
-v(ψ, m) = m.acosϕi .* SHtoGrid_dλ(ψ, m)
+v(ψ::AbstractArray{T,2}, m) where T = m.acosϕi .* SHtoGrid_dλ(ψ, m)
+v(ψ::AbstractArray{T,3}, m) where T = reshape(m.acosϕi,1,:,1) .* SHtoGrid_dλ(ψ, m)
 
 """
     QG3MM_base(q, p, t)

@@ -148,7 +148,34 @@ function zeros_Grid(p::QG3ModelParameters{T}; N_levels::Int=3, N_batch::Int=0) w
     end 
 end 
 
+"""
+    kinetic_energy(ψ::AbstractArray{T,3}, m::QG3Model{T}) where T 
 
+Computes the kinetic energy per layer
+"""
+function kinetic_energy(ψ::AbstractArray{T,3}, m::QG3Model{T}) where T 
+    E_kin = transform_SH((u(ψ, m).^2 .+ v(ψ, m).^2) ./ 2, m)
 
+    return E_kin[:,1,1]
+end 
 
+"""
+    KineticEnergyCallback{T}(m::QG3Model)
 
+Initializes a callback to compute the kinetic energy. Can be called with `(u, t, integrator)`
+and therefore used with a `SavingCallback`.
+
+To initialize a `SavingCallback` you can e.g. do
+```julia
+vals = SavedValues(eltype(m), Vector{eltype(m)})
+sol = solve(prob; cb=SavingCallback(KineticEnergyCallback(m), vals))
+vals.saveval 
+```
+"""
+struct KineticEnergyCallback{T}
+    m::QG3Model{T}
+end 
+
+function (cb::KineticEnergyCallback)(u, t, integrator)
+    kinetic_energy(qprimetoψ(cb.m, u), cb.m)
+end 
