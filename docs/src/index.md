@@ -4,7 +4,7 @@ This package provides a Julia implementation of the [Marshall, Molteni Quasigeos
 
 The model is solved with a pseudo-spectral approach on a gaussian grid with approatiate spherical harmonics transforms defined. Example scripts are provided in the `examples` folder.
 
-Install e.g. via `]add https://gitlab.pik-potsdam.de/maxgelbr/qg3.jl.git` and test the installation with `]test QG3`
+Install e.g. via `]add https://github.com/maximilian-gelbrecht/QG3.jl.git` and test the installation with `]test QG3`
 
 The repository includes pre-computed forcing and initial conditions on a T21 to run the model but no proper dataset to compute re-compute those in order to save space. The example folder also includes the necessary scripts to pre-copmute those for other grids and datasets. 
 
