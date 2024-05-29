@@ -1,4 +1,10 @@
-# QG3
+![QG3 Logo](logo.png)
+
+# QG3.jl
+
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://maximilian-gelbrecht.github.io/QG3.jl/stable/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://maximilian-gelbrecht.github.io/QG3.jl/dev/)
+[![Build Status](https://github.com/maximilian-gelbrecht/QG3.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/maximilian-gelbrecht/QG3.jl/actions/workflows/CI.yml?query=branch%3Amain)
 
 This package provides a Julia implementation of the [Marshall, Molteni Quasigeostrophic Atmsopheric Model in three layers](https://journals.ametsoc.org/view/journals/atsc/50/12/1520-0469_1993_050_1792_taduop_2_0_co_2.xml). It runs on CPU or CUDA GPUs and is differentiable via Zygote.jl.
 

@@ -28,7 +28,7 @@ This packages includes all function necessary to define the governing equation o
 
 The model parameter are hold as [`QG3ModelParameters`](@ref): 
 
-```@docs 
+```@docs; canonical=false 
 QG3ModelParameters
 ```
 
@@ -136,7 +136,7 @@ Outside of the QG3 Model itself the transforms and derivative can also be used f
 
 Either, the transforms and derivatives are initialized directly with the approatite `N_level` and `N_batch` input arguments via 
 
-```docs 
+```@docs; canonical=false 
 GaussianGridtoSHTransform
 SHtoGaussianGridTransform
 Derivative_dλ
@@ -146,6 +146,6 @@ Laplacian
 
 or a they can be constructed all together via 
 
-```docs 
+```@docs; canonical=false 
 grid 
 ```
