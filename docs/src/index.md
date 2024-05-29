@@ -137,15 +137,15 @@ Outside of the QG3 Model itself the transforms and derivative can also be used f
 Either, the transforms and derivatives are initialized directly with the approatite `N_level` and `N_batch` input arguments via 
 
 ```@docs; canonical=false 
-GaussianGridtoSHTransform
-SHtoGaussianGridTransform
-Derivative_dλ
-GaussianGrid_dμ
-Laplacian
+QG3.GaussianGridtoSHTransform
+QG3.SHtoGaussianGridTransform
+QG3.Derivative_dλ
+QG3.GaussianGrid_dμ
+QG3.Laplacian
 ```
 
 or a they can be constructed all together via 
 
 ```@docs; canonical=false 
-grid 
+QG3.grid 
 ```
