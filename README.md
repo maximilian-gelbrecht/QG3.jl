@@ -2,7 +2,6 @@
 
 # QG3.jl
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://maximilian-gelbrecht.github.io/QG3.jl/stable/)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://maximilian-gelbrecht.github.io/QG3.jl/dev/)
 [![Build Status](https://github.com/maximilian-gelbrecht/QG3.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/maximilian-gelbrecht/QG3.jl/actions/workflows/CI.yml?query=branch%3Amain)
 
@@ -12,7 +11,7 @@ The model is solved with a pseudo-spectral approach on a gaussian grid with appr
 
 Install e.g. via `]add https://github.com/maximilian-gelbrecht/QG3.jl.git` and test the installation with `]test QG3`
 
-The repository includes pre-computed forcing and initial conditions on a T21 to run the model but no proper dataset to compute re-compute those in order to save space. The example folder also includes the necessary scripts to pre-copmute those for other grids and datasets. 
+The repository includes pre-computed forcing and initial conditions on a T21 to run the model but no proper dataset to re-compute those in order to save space. The example folder also includes the necessary scripts to pre-compute those for other grids and datasets. 
 
 ## The Model
 

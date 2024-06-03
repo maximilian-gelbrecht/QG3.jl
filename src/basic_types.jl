@@ -7,39 +7,30 @@ import Base.show, Base.eltype
 
 Saves all the parameters of the model, also the units/normalization. 
 
-# A word on the normalization of the model
-
-The model is normalized in (natural) units of the system. 
-
-* Distance: The Earth's radius is set to `1` (and thus all units containing distance are scaled with the actual radius of the Earth)
-* Vorticity: Earth's angular speed is approximately 2π/d, here Earth's angular speed is set 2Ω = 1, so that the planetery vorticity component of the Jacobian is just ∂ψ/∂λ. Therefore: Ω = 1/2, it follows 2*2π [1/d] = 1 [Ω_normalized], therefore Ω_normalized = 4π/d. 
-* Time: From the vorticity unit, follows the time unit is [d/4π] = [d_normalized]. Hence, time in days must be devided by 4π to get the natural time unit, or [d_normalized] = 4π [d]
-* both ψ and q thus need to expressed in these units too, this can be done using the `ψ_unit` and `q_unit`
-
 # Fields
 
-    * `L::Int`: number of SH number l, note that 0,...,l_max, so that L is l_max + 1
-    * `M::Int`: # maximum number M values, M==2*L - 1 / 2*l_max + 1
-    * `N_lats::Int`
-    * `N_lons::Int`
-    * `lats::AbstractArray{T,1}`
-    * `θ::AbstractArray{T,1}` colatitudes = θ
-    * `μ::AbstractArray{T,1}` sin(lats) == cos(colats)
-    * `LS::AbstractArray{T,2}` Land see mask, on the same grid as lats and lons
-    * `h::AbstractArray{T,2}`` orography, array on the same grid as lats and lons
-    * `R1i::T` square inverse of Rossby radius 1 200-500hPa, default 1/(700km)^2
-    * `R2i::T` square inverse of Rossby radius 2 500-800hPa, default 1/(450km)^2
-    * `H0::T` scaling parameter for topography, default 9000m
-    * `τRi::T` inverse of radiative time scale, default 1/(25d)
-    * `τEi::T` inverse of drag time scale, default 1/(3d)
-    * `cH::T` horizonatal diffusion coefficient
-    * `α1::T` drag coefficient 1, default 0.5
-    * `α2::T` drag coefficient 2, default 0.5
-    * `gridtype::String` either 'gaussian' or 'regular', 'gaussian' leads to all transform being done by somewhat naively implemented transforms, 'regular' uses FastTransforms.jl
-    * `time_unit::T` unit so that t [normalized] = t [d] / time_unit, default = 1 / 4π
-    * `distance_unit::T`, default Earth's radius, so that s [normalized] = s [m] / distance_unit, default = 6.371e6
-    * `ψ_unit::T`, derived from time_unit and distance_unit, so that ψ [normalized] = ψ [m^2/s] / ψ_unit
-    * `q_unit::T`, derived from time_unit and distance_unit
+* `L::Int`: number of SH number l, note that 0,...,l_max, so that L is l_max + 1
+* `M::Int`: # maximum number M values, M==2*L - 1 / 2*l_max + 1
+* `N_lats::Int`
+* `N_lons::Int`
+* `lats::AbstractArray{T,1}`
+* `θ::AbstractArray{T,1}` colatitudes = θ
+* `μ::AbstractArray{T,1}` sin(lats) == cos(colats)
+* `LS::AbstractArray{T,2}` Land see mask, on the same grid as lats and lons
+* `h::AbstractArray{T,2}`` orography, array on the same grid as lats and lons
+* `R1i::T` square inverse of Rossby radius 1 200-500hPa, default 1/(700km)^2
+* `R2i::T` square inverse of Rossby radius 2 500-800hPa, default 1/(450km)^2
+* `H0::T` scaling parameter for topography, default 9000m
+* `τRi::T` inverse of radiative time scale, default 1/(25d)
+* `τEi::T` inverse of drag time scale, default 1/(3d)
+* `cH::T` horizonatal diffusion coefficient
+* `α1::T` drag coefficient 1, default 0.5
+* `α2::T` drag coefficient 2, default 0.5
+* `gridtype::String` either 'gaussian' or 'regular', 'gaussian' leads to all transform being done by somewhat naively implemented transforms, 'regular' uses FastTransforms.jl
+* `time_unit::T` unit so that t [normalized] = t [d] / time_unit, default = 1 / 4π
+* `distance_unit::T`, default Earth's radius, so that s [normalized] = s [m] / distance_unit, default = 6.371e6
+* `ψ_unit::T`, derived from time_unit and distance_unit, so that ψ [normalized] = ψ [m^2/s] / ψ_unit
+* `q_unit::T`, derived from time_unit and distance_unit
 
 # Other constructors
 
@@ -50,6 +41,15 @@ Default arguments for most parameters, so that
     QG3ModelParameters(L::Int, lats::AbstractArray{T,1}, lons::AbstractArray{T,1}, LS::AbstractArray{T,2}, h::AbstractArray{T,2})
 
 works as well.
+
+# Normalization/units of the model
+
+The model is normalized in (natural) units of the system. 
+    
+* Distance: The Earth's radius is set to `1` (and thus all units containing distance are scaled with the actual radius of the Earth)
+* Vorticity: Earth's angular speed is approximately 2π/d, here Earth's angular speed is set 2Ω = 1, so that the planetery vorticity component of the Jacobian is just ∂ψ/∂λ. Therefore: Ω = 1/2, it follows 2*2π [1/d] = 1 [Ω_normalized], therefore Ω_normalized = 4π/d. 
+* Time: From the vorticity unit, follows the time unit is [d/4π] = [d_normalized]. Hence, time in days must be devided by 4π to get the natural time unit, or [d_normalized] = 4π [d]
+* both ψ and q thus need to expressed in these units too, this can be done using the `ψ_unit` and `q_unit`    
 """
 struct QG3ModelParameters{T,I<:Int,A<:AbstractArray{T,1},M<:AbstractArray{T,2}}
     L::I

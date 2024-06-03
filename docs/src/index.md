@@ -2,7 +2,7 @@
 
 This package provides a Julia implementation of the [Marshall, Molteni Quasigeostrophic Atmsopheric Model in three layers](https://journals.ametsoc.org/view/journals/atsc/50/12/1520-0469_1993_050_1792_taduop_2_0_co_2.xml). It runs on CPU or CUDA GPUs and is differentiable via Zygote.jl.
 
-The model is solved with a pseudo-spectral approach on a gaussian grid with approatiate spherical harmonics transforms defined. Example scripts are provided in the `examples` folder.
+The model is solved with a pseudo-spectral approach on a Gaussian grid with approatiate spherical harmonics transforms defined. Example scripts are provided in the `examples` folder.
 
 Install e.g. via `]add https://github.com/maximilian-gelbrecht/QG3.jl.git` and test the installation with `]test QG3`
 
@@ -12,13 +12,13 @@ The repository includes pre-computed forcing and initial conditions on a T21 to 
 
 Details about the model can be read up in "Towards a Dynamical Understanding of Planetary-Scale Flow Regimes", Marshall, Molteni, Journal of Atmsopheric Sciences, 1992.
 
-Its governing equation for the quasigeostrophic vorticity $`q_i`$ in three equipressure levels (200, 500, 800 hPa) are given be
+Its governing equation for the quasigeostrophic vorticity $`q_i`$ in three equipressure levels (200, 500, 800 hPa) are given by
 
 ```math
 \dot{q_i} = -J(\psi_i, q_i) - D(\psi_i, q_i) + S \\
-\vec{q} = T_{\psi q} \vec{\psi}
+\vec{q} = T_{\psi q} \vec{\psi},
 ```
-where the voriticy $`q`$ and streamfunction $`\psi`$ are related by a linear operator (comprising the Laplacian and temperature relaxation), $`J`$ is the Jacobian / advection term, $`D`$ the dissipation and $`S`$ a forcing computed from data.
+where the voriticy $q$ and streamfunction $\psi$ are related by a linear operator (comprising the Laplacian and temperature relaxation), $J$ is the Jacobian / advection term, $D$ the dissipation and $S$ a forcing computed from data.
 
 ## Solvers 
 
@@ -96,16 +96,16 @@ This implemenation uses a unit system, so that the Earth's radius and angular ve
 
 ```math 
 \begin{aligned}
-R = 1
-2\Omega = 1 
+R = 1 \\
+2\Omega = 1,
 \end{aligned}
 ```
 
-, from these follow the units for all variables. The parameter struct holds those as `qg3_pars.time_unit`, `qg3_pars.distance_unit`, `qg3_pars.ψ_unit` and `qg3_pars.q_unit`. 
+from these follow the units for all variables. The parameter struct holds those as `qg3_pars.time_unit`, `qg3_pars.distance_unit`, `qg3_pars.ψ_unit` and `qg3_pars.q_unit`. 
 
 ### Transforms
 
-Throughout the model real spherical harmonics are used. The transform is implemented with a FFT and a Gauss-Legendre transform that is solved by pre-computing the associated Legendre polynomials and then executing the appropiate matrix multiplication for the transform. This ensures both differentiability and GPU compatability of the transforms. Gradients of the spherical harmonics transforms are checked against finite difference differnetiation in the tests.  
+Throughout the model real spherical harmonics are used. The transform is implemented with a FFT and a Gauss-Legendre transform that is solved by pre-computing the associated Legendre polynomials and then executing the appropiate matrix multiplication for the transform. This ensures both differentiability and GPU compatability of the transforms. Gradients of the spherical harmonics transforms are checked against finite difference differentiation in the tests.  
 
 Transforms are called with [`transform_SH`](@ref) and [`transform_grid`](@ref), e.g. as in the following: 
 
@@ -114,7 +114,7 @@ Transforms are called with [`transform_SH`](@ref) and [`transform_grid`](@ref), 
 ψ_0_SH = transform_SH(ψ_0_grid, qg3)
 ```
 
-SHs coefficients on CPU are handled in the matrix convention that FastTransforms.jl uses: columns by m-value: 0, -1, 1, -2, 2, ..., rows l in ascending order. This is implemented initially during development to ensure compatability with FastTransforms.jl, unterfortunately however, using FastTransforms.jl isn't working due to aliasing problems. On GPU, we store the coefficients differentialy  naive SH transform definately not the fasted way of storing the coefficients as an additonal allocating reordering needs to be done for every transform. Therefore the coefficient matrix convention is different on GPU, where the columns are ordered 0, 1, 2, .... l_max, 0, -1, -2, -3, .. . 
+SHs coefficients on CPU are handled in the matrix convention that FastTransforms.jl uses: columns by m-value: 0, -1, 1, -2, 2, ..., rows l in ascending order. This was implemented initially during development to ensure compatability with FastTransforms.jl, unfortunately however, using FastTransforms.jl isn't currently working (yet) due to aliasing problems. On GPU, we store the coefficients differently to avoid additional operations to reorder all coefficents that would be needed otherwise with the CUFFT routines. Therefore the coefficient matrix convention is different on GPU, where the columns are ordered 0, 1, 2, .... l_max, 0, -1, -2, -3, .. . 
 
 ### Derivates 
 
@@ -127,7 +127,7 @@ SHtoSH_dλ(ψ_0, qg3) # zonal derivative SH -> SH
 SHtoGrid_dλ(ψ_0, qg3) # zonal derivative SH -> Grid
 SHtoGrid_dμ(ψ_0, qg3) # meridional (μ = sin(latitude)) derivative SH -> Grid 
 SHtoGrid_dθ(ψ_0, qg3) # meridional (colatitude) derivative SH -> Grid 
-Δ(ψ_0, qg3) # Laplacian
+Δ(ψ_0, qg3) # Laplacian SH -> SH
 ```
 
 ### Transforms and Derivates for Machine Learning 
