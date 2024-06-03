@@ -27,3 +27,9 @@ Its governing equation for the quasigeostrophic vorticity $`q_i`$ in three equip
 where the voriticy $`q`$ and streamfunction $`\psi`$ are related by a linear operator (comprising the Laplacian and temperature relaxation), $`J`$ is the Jacobian / advection term, $`D`$ the dissipation and $`S`$ a forcing computed from data.
 
 Currently there are two different implementations, one that is optimised for CPU (the "2D version") and one that is optimised for GPU (the "3D version"). The GPU version can also run on CPU, albeit a bit slower, but not the other way around. Further explainations in the documentation.
+
+## Cite us 
+
+If you are using this model for any publications or other works, please cite us. 
+
+- ZENODO and ARXIV link upcoming (please get in touch with us) - 
