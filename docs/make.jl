@@ -7,3 +7,8 @@ pages = [
     "Reference" => "ref.md"
     ]
     )
+
+deploydocs(
+    repo = "github.com/maximilian-gelbrecht/QG3.jl.git",
+    devbranch = "main",
+)
