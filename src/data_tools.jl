@@ -159,6 +159,12 @@ function kinetic_energy(ψ::AbstractArray{T,3}, m::QG3Model{T}) where T
     return E_kin[:,1,1]
 end 
 
+function kinetic_energy(ψ::AbstractArray{T,4}, m::QG3Model{T}) where T 
+    E_kin = transform_SH((u(ψ, m).^2 .+ v(ψ, m).^2) ./ 2, m)
+
+    return E_kin[:,1,1,:]
+end 
+
 """
     KineticEnergyCallback{T}(m::QG3Model)
 
