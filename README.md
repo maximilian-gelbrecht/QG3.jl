@@ -28,8 +28,12 @@ where the voriticy $`q`$ and streamfunction $`\psi`$ are related by a linear ope
 
 Currently there are two different implementations, one that is optimised for CPU (the "2D version") and one that is optimised for GPU (the "3D version"). The GPU version can also run on CPU, albeit a bit slower, but not the other way around. Further explainations in the documentation.
 
+## The Future 
+
+It's unlikely that this model will see a lot of further development. But key ideas and lessons learned from this project are applied to [SpeedyWeather.jl](https://github.com/SpeedyWeather/SpeedyWeather.jl). We are currently working on a AD and GPU enabled version of this much more complex atmospheric model. 
+
 ## Cite us 
 
 If you are using this model for any publications or other works, please cite us. 
 
-- ZENODO and ARXIV link upcoming (please get in touch with us) - 
+[![DOI](https://zenodo.org/badge/807073084.svg)](https://doi.org/10.5281/zenodo.14547915)
