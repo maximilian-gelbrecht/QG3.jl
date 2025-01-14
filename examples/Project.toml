@@ -8,3 +8,6 @@ NNlib = "872c559c-99b0-510c-b3b7-b6c96a88d5cd"
 NetCDF = "30363a11-5582-574a-97bb-aa9a979735b9"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 QG3 = "d558103f-7907-4730-8f30-3d9252e5a318"
+
+[sources]
+QG3 = {url = "https://github.com/maximilian-gelbrecht/QG3.jl/"}
