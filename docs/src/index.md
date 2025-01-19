@@ -58,6 +58,8 @@ These struct also hold the grid information `qg3.g` that comprises all transform
 
 Currently there are two different implementations, one that is optimised for CPU (the "2D version") and one that is optimised for GPU (the "3D version"). The GPU version can also run on CPU but not the other way around.
 
+The GPU is automatically detected. If you wish to run the model on CPU on a computer that does have a CUDA capable GPU, then you can turn it of with `QG3.gpuoff()` before model pre-computation. 
+
 ### GPU Version
 
 The GPU version is fully vectorized, without scalar indexing. All needed functions work on the 3d (level, lat, lon) / (level, il, m) field. The full problem definition thus is just simply
