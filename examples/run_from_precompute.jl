@@ -2,7 +2,7 @@
 import Pkg 
 Pkg.activate("examples")
 
-using QG3, BenchmarkTools, DifferentialEquations, JLD2
+using QG3, BenchmarkTools, OrdinaryDiffEq, JLD2
 
 # load forcing and model parameters
 
@@ -27,7 +27,6 @@ sol = @time solve(prob, Tsit5(), dt=DT)
 
 # PLOT OPtiON
 using Plots
-pyplot()
 
 PLOT = true
 if PLOT

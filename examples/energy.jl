@@ -2,7 +2,7 @@
 import Pkg 
 Pkg.activate("examples")
 
-using QG3, BenchmarkTools, DifferentialEquations, JLD2, CUDA
+using QG3, BenchmarkTools, OrdinaryDiffEq, JLD2, CUDA
 
 # load forcing and model parameters
 

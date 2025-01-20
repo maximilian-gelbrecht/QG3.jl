@@ -2,7 +2,7 @@
 import Pkg 
 Pkg.activate("examples")
 
-using QG3, NetCDF, CFTime, Dates, BenchmarkTools, DifferentialEquations
+using QG3, NetCDF, CFTime, Dates, BenchmarkTools, OrdinaryDiffEq
 
 # first we import the data (streamfunction), land sea mask, orography etc
 T = Float32
@@ -55,7 +55,7 @@ qg3ppars = QG3ModelParameters(L, lats, lons, LS, h)
 qg3p = QG3Model(qg3ppars)
 
 # stream function data in spherical domain
-ψ_SH = transform_SH(ψ, qg3p)
+ψ_SH = QG3.transform_SH_data(ψ, qg3p)
 
 # initial conditions for streamfunction and vorticity
 ψ_0 = ψ_SH[:,:,:,1]
