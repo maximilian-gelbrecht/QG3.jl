@@ -334,3 +334,28 @@ function SH_zero_mask(p::QG3.QG3ModelParameters, size_tup=nothing; N_batch::Int=
         error("Wrong dimension of size should be 2,3 or 4")
     end
 end
+
+"""
+    angular_power_spectrum(A::AbstractArray{T,2}, p::QG3ModelParameters{T})
+
+Computes the angular power spectrum of a matrix in the QG3.jl SPH convention. 
+
+Usually ploted in logartihmic plots, e.g. with `plot(angular_power_spectrum(A, p), yscale=:log10)`
+)
+"""
+function angular_power_spectrum(A::AbstractArray{T,2}, p::QG3ModelParameters{T}) where T
+    
+    S = zeros(T, p.L)
+    for l = 0:(p.L-1)
+        fac = 1/(2l + 1)
+
+        S_l = 0 
+        for m ∈ -l:l
+            im = m<0 ? 2*abs(m) : 2*m+1
+            il = l + 1 - abs(m)
+            S_l += A[il,im]*A[il,im]
+        end 
+        S[l+1] = fac * S_l
+    end 
+    return S 
+end 
