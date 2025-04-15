@@ -24,6 +24,11 @@ Transforms `data` into the spherical harmonics domain. The coefficents are order
 transform_SH
 
 # CPU 4D Version (not meant for the model, but for data processing)
+"""
+    transform_SH_data(data::AbstractArray{T,4}, t::AbstractGridtoSHTransform{false})
+
+Transforms `data` into the spherical harmonics version. This version is meant for pre-processing, with the trailing dimension flexible for transforming time series. It's not AD enabled. For that see `transform_SH`
+"""
 function transform_SH_data(data::AbstractArray{T,4}, t::AbstractGridtoSHTransform{false}) where T<:Number
     data_sh = zeros(T, size(data, 1), t.output_size..., size(data,4))
     for it ∈ 1:size(data,4)
@@ -83,6 +88,11 @@ function setpvzero(data::AbstractArray{T,4}) where {T}
     data_out
 end 
 
+"""
+    transform_grid_data(data::AbstractArray{T,4}, t::AbstractSHtoGridTransform{true})
+
+Transforms `data` back into the grid domain. This version is meant for pre-processing, with the trailing dimension flexible for transforming time series. It's not AD enabled. For that see `transform_grid`
+"""
 function transform_grid_data(data::AbstractArray{T,4}, t::AbstractSHtoGridTransform{true}) where {T}
    data_sh = CUDA.zeros(T, size(data,1), t.output_size..., size(data,4))
    for it ∈ 1:size(data,4)
