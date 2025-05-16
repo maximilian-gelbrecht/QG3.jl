@@ -161,6 +161,7 @@ end
     project_x = ChainRulesCore.ProjectTo(x)
 
     function scale_element(x̄_scaled_j, idx)
+        # test 
         i = idx[halfdim]  # This operation happens on CPU
         
         if i == 1 || (i == i_imag && 2 * (i - 1) == d)
