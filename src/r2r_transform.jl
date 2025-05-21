@@ -126,18 +126,21 @@ end
        
     project_x = ChainRulesCore.ProjectTo(x)
     # look up what the do... function does 
+
+    function scale_element(ybar_j, idx)
+        i = idx[halfdim]  # This happens on CPU
+            
+        if i == 1 || (i == i_imag && 2 * (i - 1) == d)
+            return ybar_j  # No scaling
+        else
+            return ybar_j / 2  # Scale by half
+        end
+    end
+
     function plan_r2r_pullback(ȳ)
         ybar = ChainRulesCore.unthunk(ȳ)
-        # thats applying the function to the input and its indices 
-        ybar_scaled = map(ybar, CartesianIndices(ybar)) do ybar_j, j
-                i = j[halfdim] # thats the individual index in the dimension we are doing the fft 
-                ybar_scaled_j = if i == 1 || (i == i_imag && 2 * (i - 1) == d)
-                    ybar_j   # no scaling for first and last frequency of the real part, last one only when input dimension is even (imag part is zero)
-                else
-                    ybar_j / 2 # all other are scaled 
-                end
-                return ybar_scaled_j
-        end
+        ybar_scaled = scale_element.(ybar, CartesianIndices(ybar))
+
         x̄ = project_x(P \ ybar_scaled) # thats an unnormalized inverse transform
     
         return ChainRulesCore.NoTangent(), ChainRulesCore.NoTangent(), x̄
@@ -156,22 +159,25 @@ end
     i_imag = P.i_imag #Int(n/2)+1
         
     project_x = ChainRulesCore.ProjectTo(x)
+
+    function scale_element(x̄_scaled_j, idx)
+        # test 
+        i = idx[halfdim]  # This operation happens on CPU
+        
+        if i == 1 || (i == i_imag && 2 * (i - 1) == d)
+            return x̄_scaled_j
+        else
+            return 2 * x̄_scaled_j
+        end
+    end
         
     function plan_ir2r_pullback(ȳ)
         ybar = ChainRulesCore.unthunk(ȳ)
         x̄_scaled = P \ ybar # R2HC unscaled
 
-        x̄ = project_x(map(x̄_scaled, CartesianIndices(x̄_scaled)) do x̄_scaled_j, j
-                i = j[halfdim]
-                x̄_j = if i == 1 || (i == i_imag && 2 * (i - 1) == d) 
-                    x̄_scaled_j
-                else
-                    2 * x̄_scaled_j
-                end
-                return x̄_j
-        end)
+        x_scaled = scale_element.(x̄_scaled, CartesianIndices(x̄_scaled))
 
-        return ChainRulesCore.NoTangent(), ChainRulesCore.NoTangent(), x̄
+        return ChainRulesCore.NoTangent(), ChainRulesCore.NoTangent(), project_x(x_scaled)
     end
     return y, plan_ir2r_pullback
 end
