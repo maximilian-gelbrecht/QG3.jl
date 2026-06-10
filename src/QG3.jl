@@ -67,4 +67,6 @@ include("forcing.jl")
 export QG3ModelParameters, QG3Model, transform_SH, transform_grid, level_index, hours
 export qprimetoψ, ψtoqprime, qtoψ, ψtoq, J, D, J3, D1, D2, D3, togpu, tocpu
 
+export animate
+function animate end
 end
